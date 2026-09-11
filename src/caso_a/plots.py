@@ -88,7 +88,9 @@ def distribucion_semanal(semanal: pd.DataFrame, destino: Path) -> Path:
     ax.axvline(y.median(), color=TINTA, linewidth=2, linestyle="--", label=f"mediana {y.median():.0f}")
     ax.set_xlabel("Unidades por serie y semana")
     ax.set_ylabel("Nº de observaciones")
-    ax.set_title("Demanda semanal: unimodal, asimetría leve y sin ceros")
+    forma = "asimetría leve" if abs(y.skew()) < 1 else "asimetría marcada"
+    ceros = "sin ceros" if (y == 0).sum() == 0 else f"{int((y == 0).sum())} ceros"
+    ax.set_title(f"Demanda semanal: {forma} ({y.skew():.2f}) y {ceros}")
     ax.legend()
     _limpiar(ax)
     return _guardar(fig, destino, "01_distribucion_semanal")
@@ -98,7 +100,8 @@ def ciclo_semanal(dias: pd.DataFrame, destino: Path) -> Path:
     """Indice de demanda por dia de la semana; fin de semana destacado."""
     _preparar()
     fig, ax = plt.subplots(figsize=(7.2, 4.0))
-    colores = [AZUL if d < 4 else NARANJA for d in range(7)]
+    top3 = set(dias["indice"].nlargest(3).index)
+    colores = [NARANJA if nombre in top3 else AZUL for nombre in dias.index]
     barras = ax.bar(dias.index, dias["indice"], color=colores, width=0.66)
     ax.axhline(1.0, color=TINTA_SUAVE, linewidth=1)
     for barra, valor in zip(barras, dias["indice"]):
@@ -106,8 +109,12 @@ def ciclo_semanal(dias: pd.DataFrame, destino: Path) -> Path:
                 ha="center", va="bottom", fontsize=9, color=TINTA)
     ax.set_ylabel("Índice sobre la media diaria")
     ax.set_ylim(0, 1.45)
-    ax.set_title("El fin de semana vende un 50 % más que el resto")
-    ax.text(0.02, 0.95, "Azul: lunes a jueves    Naranja: viernes a domingo",
+    altos = dias["indice"].nlargest(3)
+    bajos = dias["indice"].nsmallest(len(dias) - 3)
+    exceso = 100 * (altos.mean() / bajos.mean() - 1)
+    nombres = [d for d in dias.index if d in set(altos.index)]
+    ax.set_title(f"{", ".join(nombres)} venden un {exceso:.0f} % más que el resto")
+    ax.text(0.02, 0.95, f"Naranja: los {len(altos)} días de mayor demanda",
             transform=ax.transAxes, fontsize=9, color=TINTA_SUAVE, va="top")
     _limpiar(ax)
     return _guardar(fig, destino, "02_ciclo_dia_semana")
@@ -120,8 +127,8 @@ def autocorrelaciones(acf_diaria: pd.DataFrame, acf_semanal: pd.DataFrame,
     fig, (izq, der) = plt.subplots(1, 2, figsize=(11.0, 4.2))
 
     for ax, datos, banda, titulo in (
-        (izq, acf_diaria, banda_dia, "Diaria: solo el ciclo de 7 días"),
-        (der, acf_semanal, banda_sem, "Semanal: no queda memoria"),
+        (izq, acf_diaria, banda_dia, "Diaria"),
+        (der, acf_semanal, banda_sem, "Semanal"),
     ):
         rezagos = datos.index.to_numpy()
         valores = datos["acf"].to_numpy()
@@ -132,17 +139,23 @@ def autocorrelaciones(acf_diaria: pd.DataFrame, acf_semanal: pd.DataFrame,
         ax.axhline(0, color=TINTA_SUAVE, linewidth=1)
         ax.set_xlabel("Rezago")
         ax.set_ylabel("Autocorrelación")
-        ax.set_title(titulo)
+        signif = [int(r) for r in datos.index[np.abs(datos["acf"]) > banda] if r > 0]
+        detalle = f"rezagos {signif}" if signif else "ningún rezago significativo"
+        ax.set_title(f"{titulo}: {detalle}")
         ax.set_ylim(-0.45, 1.05)
         _limpiar(ax)
 
-    izq.annotate("rezagos 7, 14 y 21", xy=(7, 0.287), xytext=(10.5, 0.62),
-                 fontsize=9, color=TINTA,
-                 arrowprops={"arrowstyle": "->", "color": TINTA_SUAVE, "linewidth": 1})
-    der.text(0.5, 0.62, "Ningún rezago supera\nla banda de significación",
+    sig_d = [int(r) for r in acf_diaria.index[np.abs(acf_diaria["acf"]) > banda_dia] if r > 0]
+    sig_s = [int(r) for r in acf_semanal.index[np.abs(acf_semanal["acf"]) > banda_sem] if r > 0]
+    if sig_d and not sig_s:
+        mensaje = "Al agregar a semana desaparece toda la estructura temporal"
+    elif sig_s:
+        mensaje = f"La estructura semanal sobrevive en los rezagos {sig_s}"
+    else:
+        mensaje = "No se detecta estructura temporal en ninguna granularidad"
+    der.text(0.5, 0.62, f"Rezago 1 semanal: {acf_semanal['acf'].iloc[1]:+.3f}\nBanda: ±{banda_sem:.3f}",
              transform=der.transAxes, fontsize=9.5, color=TINTA_SUAVE, ha="center")
-    fig.suptitle("Al agregar a semana desaparece toda la estructura temporal",
-                 fontsize=12.5, fontweight="bold", color=TINTA)
+    fig.suptitle(mensaje, fontsize=12.5, fontweight="bold", color=TINTA)
     fig.tight_layout(rect=(0, 0, 1, 0.94))
     ruta = destino / "03_autocorrelacion.png"
     fig.savefig(ruta, dpi=PPP, facecolor=SUPERFICIE)
@@ -180,7 +193,7 @@ def descomposicion_varianza(pct_entre: float, pct_tendencia: float,
     ax.set_ylim(-0.45, 0.45)
     ax.set_yticks([])
     ax.set_xlabel("Porcentaje de la varianza de la demanda semanal")
-    ax.set_title("El 90 % de la variación no es pronosticable: es quién es cada serie")
+    ax.set_title(f"El {pct_entre:.0f} % de la variación no es pronosticable: es quién es cada serie")
     ax.spines["left"].set_visible(False)
     _limpiar(ax, rejilla="x")
 
@@ -211,7 +224,14 @@ def tendencias(cambios: pd.Series, destino: Path) -> Path:
     ax.axvline(0, color=TINTA_SUAVE, linewidth=1)
     ax.set_xlabel("Cambio acumulado en 13 semanas (%)")
     ax.set_ylabel("Nº de series")
-    ax.set_title("Las tendencias van en las dos direcciones y son grandes")
+    suben, bajan = int((cambios > 20).sum()), int((cambios < -20).sum())
+    if suben and bajan:
+        rumbo = "van en las dos direcciones"
+    elif suben or bajan:
+        rumbo = "van casi todas en la misma dirección"
+    else:
+        rumbo = "son pequeñas"
+    ax.set_title(f"Las tendencias {rumbo}: {suben + bajan} series se mueven más de un 20 %")
     ax.text(0.02, 0.95,
             f"Caen más de 20 %: {int((cambios < -20).sum())}\n"
             f"Planas: {int(cambios.between(-5, 5).sum())}\n"
@@ -259,7 +279,9 @@ def tamano_frente_demanda(semanal: pd.DataFrame, destino: Path) -> Path:
             linestyle="--", zorder=2)
     ax.set_xlabel("Superficie de la tienda (m²)")
     ax.set_ylabel("Demanda media por SKU y semana")
-    ax.set_title("Las tiendas grandes venden más, en las tres ciudades")
+    rho = por_tienda["tamano_m2"].corr(por_tienda["unidades_vendidas"], method="spearman")
+    relacion = "venden más" if rho > 0 else "venden menos"
+    ax.set_title(f"Las tiendas grandes {relacion} (ρ = {rho:.2f}), en las {len(ciudades)} ciudades")
     ax.legend(title=None, loc="upper left")
     _limpiar(ax, rejilla="both")
     return _guardar(fig, destino, "07_tamano_vs_demanda")
@@ -287,10 +309,120 @@ def series_ejemplo(semanal: pd.DataFrame, tendencias_reales: pd.DataFrame,
         ax.set_xlabel("Semana")
         _limpiar(ax)
     np.atleast_1d(ejes)[0].set_ylabel("Unidades")
-    fig.suptitle("Los cuatro patrones del generador, con su recta ajustada",
+    fig.suptitle(f"Los {len(patrones)} patrones del generador, con su recta ajustada",
                  fontsize=12.5, fontweight="bold", color=TINTA)
     fig.tight_layout(rect=(0, 0, 1, 0.9))
     ruta = destino / "08_patrones_ejemplo.png"
     fig.savefig(ruta, dpi=PPP, facecolor=SUPERFICIE)
     plt.close(fig)
     return ruta
+
+
+def comparacion_lineas_base(tabla: pd.DataFrame, destino: Path) -> Path:
+    """Error de cada linea base en las semanas de prueba."""
+    _preparar()
+    datos = tabla.sort_values("WAPE", ascending=False)
+    fig, ax = plt.subplots(figsize=(7.6, 4.0))
+    colores = [AZUL if i == len(datos) - 1 else GRIS for i in range(len(datos))]
+    ax.barh(datos.index, 100 * datos["WAPE"], color=colores, height=0.62)
+    for nombre, valor in datos["WAPE"].items():
+        ax.text(100 * valor + 0.12, nombre, f"{100 * valor:.2f} %", va="center",
+                fontsize=9.5, color=TINTA)
+    ax.set_xlabel("WAPE en las semanas de prueba (%)")
+    ax.set_xlim(0, 100 * datos["WAPE"].max() * 1.14)
+    ganadora = datos["WAPE"].idxmin()
+    ax.set_title(f"Líneas base: gana «{ganadora}» con {100 * datos['WAPE'].min():.2f} %")
+    _limpiar(ax, rejilla="x")
+    return _guardar(fig, destino, "09_lineas_base")
+
+
+def barrido_ventana(tabla: pd.DataFrame, destino: Path) -> Path:
+    """WAPE de la media movil segun la longitud de la ventana."""
+    _preparar()
+    fig, ax = plt.subplots(figsize=(7.2, 4.0))
+    x = tabla["ventana"].to_numpy()
+    y = 100 * tabla["WAPE"].to_numpy()
+    ax.plot(x, y, color=AZUL, linewidth=2, marker="o", markersize=7,
+            markerfacecolor=SUPERFICIE, markeredgewidth=2)
+    mejor = int(tabla.loc[tabla["WAPE"].idxmin(), "ventana"])
+    valor = 100 * tabla["WAPE"].min()
+    ax.scatter([mejor], [valor], s=150, color=NARANJA, zorder=5)
+    ax.annotate(f"óptimo: {mejor} semanas\n{valor:.2f} %", xy=(mejor, valor),
+                xytext=(mejor + 1.1, valor + 0.28), fontsize=9.5, color=TINTA,
+                arrowprops={"arrowstyle": "->", "color": TINTA_SUAVE, "linewidth": 1})
+    ax.set_xlabel("Semanas promediadas")
+    ax.set_ylabel("WAPE en prueba (%)")
+    ax.set_title(f"Promediar {mejor} semanas es el punto justo")
+    _limpiar(ax)
+    return _guardar(fig, destino, "10_barrido_ventana")
+
+
+def niveles_por_escenario(tablas: dict[str, pd.DataFrame], destino: Path) -> Path:
+    """Nivel de servicio de cada producto bajo cada supuesto de merma."""
+    _preparar()
+    orden = list(tablas.values())[-1].sort_values("nivel")["nombre"].tolist()
+    colores = (AZUL, AGUA, NARANJA, ROJO)
+
+    fig, ax = plt.subplots(figsize=(8.4, 4.6))
+    posiciones = np.arange(len(orden))
+    alto = 0.8 / len(tablas)
+
+    for indice, ((nombre, tabla), color) in enumerate(zip(tablas.items(), colores)):
+        valores = tabla.set_index("nombre").loc[orden, "nivel"].to_numpy()
+        desplazamiento = (indice - (len(tablas) - 1) / 2) * alto
+        ax.barh(posiciones + desplazamiento, valores, height=alto * 0.92,
+                color=color, label=nombre)
+
+    ax.set_yticks(posiciones)
+    ax.set_yticklabels(orden)
+    ax.set_xlabel("Nivel de servicio")
+    ax.set_xlim(0, 1.06)
+    dispersion = {n: t["nivel"].max() - t["nivel"].min() for n, t in tablas.items()}
+    mas_disperso = max(dispersion, key=dispersion.get)
+    ax.set_title(f"Los niveles solo se diferencian con el supuesto «{mas_disperso}»")
+    ax.legend(loc="lower right")
+    _limpiar(ax, rejilla="x")
+    return _guardar(fig, destino, "11_niveles_por_escenario")
+
+
+def sensibilidad_merma(datos: pd.DataFrame, destino: Path) -> Path:
+    """Nivel de servicio de cada producto al variar la merma supuesta."""
+    _preparar()
+    fig, ax = plt.subplots(figsize=(8.6, 5.0))
+    finales = (
+        datos[datos["fraccion_merma"] == datos["fraccion_merma"].max()]
+        .set_index("nombre")["nivel"].sort_values(ascending=False)
+    )
+
+    for indice, nombre in enumerate(finales.index):
+        sub = datos[datos["nombre"] == nombre].sort_values("fraccion_merma")
+        opacidad = 1 - 0.55 * (indice / max(len(finales) - 1, 1))
+        ax.plot(100 * sub["fraccion_merma"], sub["nivel"], linewidth=2, color=AZUL, alpha=opacidad)
+
+    # Reparte las etiquetas a intervalos regulares y centradas sobre los valores
+    # que describen, en lugar de empujarlas hacia abajo desde la primera, que
+    # acabaria sacando las ultimas fuera del eje.
+    inferior, superior = ax.get_ylim()
+    alto = superior - inferior
+    paso = min(alto * 0.055, alto * 0.8 / max(len(finales) - 1, 1))
+    centro = float(finales.to_numpy().mean())
+    arriba = centro + paso * (len(finales) - 1) / 2
+    posiciones = [arriba - paso * i for i in range(len(finales))]
+
+    for nombre, real, y in zip(finales.index, finales.to_numpy(), posiciones):
+        ax.annotate(nombre, xy=(100, real), xytext=(106, y), fontsize=8.6,
+                    va="center", color=TINTA_SUAVE,
+                    arrowprops={"arrowstyle": "-", "color": REJILLA, "linewidth": 0.9})
+
+    ax.set_xlabel("Porcentaje del sobrante que se descarta")
+    ax.set_ylabel("Nivel de servicio")
+    ax.set_xlim(0, 150)
+    ax.set_xticks([0, 25, 50, 75, 100])
+    ceros = datos[datos["fraccion_merma"] == 0]["nivel"]
+    ax.set_title(
+        f"De agruparse en {ceros.mean():.2f} a repartirse entre "
+        f"{finales.min():.2f} y {finales.max():.2f}",
+        loc="left",
+    )
+    _limpiar(ax, rejilla="both")
+    return _guardar(fig, destino, "12_sensibilidad_merma")

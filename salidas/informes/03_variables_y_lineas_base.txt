@@ -1,0 +1,119 @@
+VARIABLES Y LINEAS BASE - CASO A
+====================================================================================
+
+
+1. DISENO DEL EXPERIMENTO
+====================================================================================
+
+  entrenamiento 5-10 (6 semanas), prueba 11-13 (3 semanas), prediccion semana 14
+  semanas 1-4: historia que consumen los rezagos, sin filas utilizables
+
+  pliegues de validacion, ventana expansiva:
+    1: ajusta [5, 6, 7] -> valida semana 8
+    2: ajusta [5, 6, 7, 8] -> valida semana 9
+    3: ajusta [5, 6, 7, 8, 9] -> valida semana 10
+
+
+2. VARIABLES CONSTRUIDAS
+====================================================================================
+
+  13 variables: rezago_1, rezago_2, rezago_3, rezago_4, media_2, desv_2, media_3, desv_3, media_4, desv_4, pendiente, razon_ultima, cv_reciente
+  prueba antifuga: superada, ninguna variable usa informacion posterior al corte
+  filas utilizables: 960 de entrenamiento, 480 de prueba
+
+
+3. RELACION DE CADA VARIABLE CON EL OBJETIVO
+====================================================================================
+
+3.1 Correlacion marginal, sobre entrenamiento
+------------------------------------------------------------------------------------
+    variable  spearman  pearson  info_mutua
+     media_3     0.947    0.943       1.151
+     media_4     0.947    0.944       1.182
+     media_2     0.943    0.938       1.096
+    rezago_1     0.931    0.923       0.984
+    rezago_2     0.924    0.917       0.941
+    rezago_3     0.921    0.914       0.966
+    rezago_4     0.909    0.903       0.851
+   tamano_m2     0.525    0.569       0.355
+      desv_4     0.455    0.481       0.163
+      desv_3     0.374    0.410       0.116
+ cv_reciente    -0.359   -0.364       0.059
+      desv_2     0.276    0.318       0.068
+   pendiente     0.097    0.120       0.060
+razon_ultima     0.032    0.027       0.014
+
+3.2 Correlacion dentro de la serie, restada la media de cada una
+------------------------------------------------------------------------------------
+    variable  spearman  pearson      p
+     media_4   -0.0982  -0.0656 0.0023
+     media_3   -0.0941  -0.0695 0.0035
+     media_2   -0.0731  -0.0770 0.0236
+    rezago_2   -0.0596  -0.0619 0.0647
+    rezago_3   -0.0275  -0.0070 0.3955
+    rezago_1   -0.0174  -0.0451 0.5896
+      desv_4   -0.0171  -0.0274 0.5970
+razon_ultima    0.0133  -0.0021 0.6809
+   pendiente   -0.0106  -0.0378 0.7418
+      desv_2   -0.0064   0.0047 0.8428
+ cv_reciente   -0.0053  -0.0151 0.8694
+    rezago_4   -0.0043  -0.0059 0.8929
+      desv_3   -0.0026  -0.0125 0.9353
+
+3.3 Redundancia entre variables
+------------------------------------------------------------------------------------
+    variable  R2_contra_resto  VIF
+    rezago_1             1.00  inf
+    rezago_2             1.00  inf
+    rezago_3             1.00  inf
+    rezago_4             1.00  inf
+     media_2             1.00  inf
+     media_3             1.00  inf
+     media_4             1.00  inf
+   pendiente             1.00  inf
+      desv_4             0.88 8.57
+ cv_reciente             0.81 5.22
+razon_ultima             0.81 5.17
+      desv_3             0.80 5.04
+      desv_2             0.58 2.41
+   tamano_m2             0.38 1.61
+
+
+4. LINEAS BASE
+====================================================================================
+
+4.1 Semanas de entrenamiento, 960 filas
+------------------------------------------------------------------------------------
+                     MAE     RMSE    WAPE   sMAPE   sesgo      R2  escalado
+media movil 4    10.3763  13.4712  0.1121  0.1215  0.5633  0.8914    0.9718
+media historica  10.6779  13.9735  0.1153  0.1234  1.1275  0.8831    1.0000
+persistencia     12.1052  15.9794  0.1307  0.1409  0.0927  0.8471    1.1337
+deriva           14.3486  18.8836  0.1550  0.1672 -0.2845  0.7865    1.3438
+
+4.2 Semanas de prueba, 480 filas
+------------------------------------------------------------------------------------
+                     MAE     RMSE    WAPE   sMAPE   sesgo      R2  escalado
+media movil 4    11.1083  14.4177  0.1191  0.1300  0.4833  0.8993    0.8510
+persistencia     12.4979  16.0209  0.1340  0.1501  0.4479  0.8757    0.9575
+media historica  13.0525  17.2198  0.1399  0.1492  1.2288  0.8564    1.0000
+deriva           14.4658  18.5937  0.1551  0.1766  0.4996  0.8325    1.1083
+
+
+5. LONGITUD OPTIMA DE LA MEDIA MOVIL
+====================================================================================
+
+ ventana   WAPE     MAE     R2
+       2 0.1224 11.4177 0.8958
+       3 0.1187 11.0722 0.9022
+       4 0.1191 11.1083 0.8993
+       5 0.1198 11.1779 0.8976
+       6 0.1228 11.4556 0.8929
+       7 0.1246 11.6235 0.8883
+       8 0.1273 11.8742 0.8842
+
+
+6. GRAFICOS GENERADOS
+====================================================================================
+
+  salidas/figuras/09_lineas_base.png
+  salidas/figuras/10_barrido_ventana.png

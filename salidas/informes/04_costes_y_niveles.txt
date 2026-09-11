@@ -1,0 +1,114 @@
+COSTES Y NIVELES DE SERVICIO - CASO A
+====================================================================================
+
+Importes en pesos colombianos por unidad.
+El nivel de servicio es la proporcion de semanas que conviene cubrir y sale
+de dividir el coste de faltante entre la suma de los dos costes.
+
+
+1. ESCENARIOS CONSIDERADOS
+====================================================================================
+
+sin merma - se descarta el 0% del sobrante
+------------------------------------------------------------------------------------
+  El sobrante se conserva y se vende la semana siguiente. Solo se paga almacenamiento. Es el supuesto implicito del enunciado.
+
+merma parcial - se descarta el 50% del sobrante
+------------------------------------------------------------------------------------
+  La mitad del sobrante se recupera. Escenario intermedio, util para acotar la sensibilidad del resultado.
+
+con merma - se descarta el 100% del sobrante
+------------------------------------------------------------------------------------
+  El sobrante se descarta al cierre. Es lo habitual en cafeteria y bolleria, donde el producto no se conserva de un dia para otro.
+
+
+2. COSTES Y NIVEL DE SERVICIO POR PRODUCTO
+====================================================================================
+
+2.1 sin merma
+------------------------------------------------------------------------------------
+         nombre categoria  faltante  sobrante   razon  nivel  prob_quiebre
+     Cappuccino   Bebidas      3000      15.0 200.000  0.995         0.005
+          Tinto   Bebidas      1700      10.0 170.000  0.994         0.006
+ Café con Leche   Bebidas      2300      15.0 153.333  0.994         0.006
+      Croissant Alimentos      2300      25.0  92.000  0.989         0.011
+    Pan de Bono Alimentos      1800      20.0  90.000  0.989         0.011
+        Buñuelo Alimentos      1700      20.0  85.000  0.988         0.012
+Pastel de Pollo Alimentos      2000      30.0  66.667  0.985         0.015
+Jugo de Naranja   Bebidas      3000      50.0  60.000  0.984         0.016
+  rango de niveles: 0.984 a 0.995 (amplitud 0.011)
+
+2.2 merma parcial
+------------------------------------------------------------------------------------
+         nombre categoria  faltante  sobrante  razon  nivel  prob_quiebre
+          Tinto   Bebidas      1700     410.0  4.146  0.806         0.194
+        Buñuelo Alimentos      1700     420.0  4.048  0.802         0.198
+     Cappuccino   Bebidas      3000     765.0  3.922  0.797         0.203
+ Café con Leche   Bebidas      2300     615.0  3.740  0.789         0.211
+      Croissant Alimentos      2300     625.0  3.680  0.786         0.214
+    Pan de Bono Alimentos      1800     520.0  3.462  0.776         0.224
+Jugo de Naranja   Bebidas      3000    1050.0  2.857  0.741         0.259
+Pastel de Pollo Alimentos      2000     780.0  2.564  0.719         0.281
+  rango de niveles: 0.719 a 0.806 (amplitud 0.086)
+
+2.3 con merma
+------------------------------------------------------------------------------------
+         nombre categoria  faltante  sobrante  razon  nivel  prob_quiebre
+          Tinto   Bebidas      1700     810.0  2.099  0.677         0.323
+        Buñuelo Alimentos      1700     820.0  2.073  0.675         0.325
+     Cappuccino   Bebidas      3000    1515.0  1.980  0.664         0.336
+ Café con Leche   Bebidas      2300    1215.0  1.893  0.654         0.346
+      Croissant Alimentos      2300    1225.0  1.878  0.652         0.348
+    Pan de Bono Alimentos      1800    1020.0  1.765  0.638         0.362
+Jugo de Naranja   Bebidas      3000    2050.0  1.463  0.594         0.406
+Pastel de Pollo Alimentos      2000    1530.0  1.307  0.567         0.433
+  rango de niveles: 0.567 a 0.677 (amplitud 0.111)
+
+
+3. SENSIBILIDAD AL SUPUESTO DE MERMA
+====================================================================================
+
+nombre          Buñuelo  Café con Leche  Cappuccino  Croissant  Jugo de Naranja  Pan de Bono  Pastel de Pollo  Tinto
+fraccion_merma                                                                                                      
+0.0               0.988           0.994       0.995      0.989            0.984        0.989            0.985  0.994
+0.2               0.904           0.900       0.905      0.897            0.870        0.891            0.858  0.909
+0.4               0.833           0.823       0.830      0.820            0.779        0.811            0.760  0.837
+0.6               0.773           0.758       0.766      0.755            0.706        0.744            0.683  0.776
+0.8               0.720           0.702       0.712      0.700            0.645        0.687            0.619  0.723
+1.0               0.675           0.654       0.664      0.652            0.594        0.638            0.567  0.677
+
+  amplitud entre el SKU mas y menos agresivo, por fraccion de merma:
+    0% descartado -> amplitud 0.011
+    25% descartado -> amplitud 0.058
+    50% descartado -> amplitud 0.086
+    75% descartado -> amplitud 0.102
+    100% descartado -> amplitud 0.111
+
+
+4. REJILLA DE NIVELES A ENTRENAR
+====================================================================================
+
+  17 niveles: [0.5, 0.57, 0.59, 0.64, 0.65, 0.66, 0.67, 0.68, 0.72, 0.74, 0.78, 0.79, 0.8, 0.81, 0.9, 0.98, 0.99]
+  acotados al rango [0.5, 0.99]
+
+  nivel que consulta cada producto en cada escenario:
+id_producto          nombre  sin merma  merma parcial  con merma  dem_media
+   PROD_001           Tinto       0.99           0.81       0.68       57.6
+   PROD_002  Café con Leche       0.99           0.79       0.65       79.2
+   PROD_003      Cappuccino       0.99           0.80       0.66       81.7
+   PROD_004     Pan de Bono       0.99           0.78       0.64       47.6
+   PROD_005         Buñuelo       0.99           0.80       0.67      125.0
+   PROD_006       Croissant       0.99           0.79       0.65      111.1
+   PROD_007 Pastel de Pollo       0.99           0.72       0.57      121.0
+   PROD_008 Jugo de Naranja       0.98           0.74       0.59      114.7
+
+  parametros guardados para el optimizador:
+    salidas/parametros/politica_costes.csv
+    salidas/parametros/rejilla_niveles.json
+
+
+5. GRAFICOS GENERADOS
+====================================================================================
+
+  salidas/figuras/11_niveles_por_escenario.png
+  salidas/figuras/12_sensibilidad_merma.png

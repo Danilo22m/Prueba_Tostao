@@ -18,6 +18,8 @@ DATOS_CRUDOS: Path = RAIZ / "Caso A" / "01_supply_optimization"
 SALIDAS: Path = RAIZ / "salidas"
 INFORMES: Path = SALIDAS / "informes"
 FIGURAS: Path = SALIDAS / "figuras"
+#: Parametros de decision en formato legible por maquina, para auditoria.
+PARAMETROS: Path = SALIDAS / "parametros"
 
 #: Nombre de fichero de cada tabla de origen.
 FICHEROS: dict[str, str] = {
@@ -52,5 +54,5 @@ def ruta_datos(tabla: str) -> Path:
 
 def asegurar_salidas() -> None:
     """Crea las carpetas de salida si no existen."""
-    for carpeta in (SALIDAS, INFORMES, FIGURAS):
+    for carpeta in (SALIDAS, INFORMES, FIGURAS, PARAMETROS):
         carpeta.mkdir(parents=True, exist_ok=True)

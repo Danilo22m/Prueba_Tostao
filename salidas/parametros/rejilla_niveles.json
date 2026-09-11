@@ -1,0 +1,43 @@
+{
+  "niveles": [
+    0.5,
+    0.57,
+    0.59,
+    0.64,
+    0.65,
+    0.66,
+    0.67,
+    0.68,
+    0.72,
+    0.74,
+    0.78,
+    0.79,
+    0.8,
+    0.81,
+    0.9,
+    0.98,
+    0.99
+  ],
+  "n_modelos": 17,
+  "nivel_minimo": 0.5,
+  "nivel_maximo": 0.99,
+  "decimales": 2,
+  "tasa_capital": 0.0,
+  "escenarios": [
+    {
+      "nombre": "sin merma",
+      "fraccion_merma": 0.0,
+      "descripcion": "El sobrante se conserva y se vende la semana siguiente. Solo se paga almacenamiento. Es el supuesto implicito del enunciado."
+    },
+    {
+      "nombre": "merma parcial",
+      "fraccion_merma": 0.5,
+      "descripcion": "La mitad del sobrante se recupera. Escenario intermedio, util para acotar la sensibilidad del resultado."
+    },
+    {
+      "nombre": "con merma",
+      "fraccion_merma": 1.0,
+      "descripcion": "El sobrante se descarta al cierre. Es lo habitual en cafeteria y bolleria, donde el producto no se conserva de un dia para otro."
+    }
+  ]
+}
