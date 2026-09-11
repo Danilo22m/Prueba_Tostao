@@ -1,0 +1,12 @@
+# Archivos generados por macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Entornos y cachés de Python
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+.venv/
+venv/
