@@ -1,0 +1,58 @@
+AUDITORIA DE DATOS - CASO A - OPTIMIZACION DE ABASTECIMIENTO
+==============================================================================
+Comprobaciones superadas: 27 de 27
+FORMA DEL PANEL
+------------------------------------------------------------------------------
+OK    Tiendas distintas en ventas                    20
+OK    Productos distintos en ventas                  8
+OK    Series tienda-producto                         160
+
+LONGITUD DE LAS SERIES
+------------------------------------------------------------------------------
+OK    Todas las series tienen la misma longitud      [91]
+OK    Dias por serie                                 [91]
+
+CALENDARIO
+------------------------------------------------------------------------------
+OK    Calendario continuo                            0
+  --  Rango de fechas                                2024-01-01 a 2024-03-31 (91 dias)
+
+CLAVES DUPLICADAS
+------------------------------------------------------------------------------
+OK    Clave unica en ventas                          0
+OK    Clave unica en inventario                      0
+OK    Clave unica en catalogo                        0
+OK    Clave unica en tiendas                         0
+OK    Clave unica en tendencias                      0
+
+INTEGRIDAD ENTRE TABLAS
+------------------------------------------------------------------------------
+OK    Productos de ventas presentes en catalogo      0
+OK    Productos de catalogo usados en ventas         0
+OK    Tiendas de ventas presentes en maestro         0
+OK    Tiendas de maestro usadas en ventas            0
+OK    Inventario cubre todas las series              0
+OK    Tendencias cubren todas las series             0
+
+VALORES
+------------------------------------------------------------------------------
+OK    Sin nulos en ventas                            0
+OK    Sin nulos en inventario                        0
+OK    Sin nulos en catalogo                          0
+OK    Sin nulos en tiendas                           0
+OK    Sin nulos en tendencias                        0
+OK    Unidades vendidas no negativas                 0
+OK    Stock no negativo                              0
+OK    Precio por encima del coste en todos los SKU   0
+
+BALANCE DEL DISENO
+------------------------------------------------------------------------------
+OK    Diseno balanceado por producto                 1820 a 1820
+        codificacion por frecuencia inservible en id_producto
+OK    Diseno balanceado por tienda                   728 a 728
+        codificacion por frecuencia inservible en id_tienda
+
+CEROS Y CENSURA
+------------------------------------------------------------------------------
+  --  Dias con cero unidades                         26 (0.18 %)
+        Si es alto, la demanda registrada puede estar censurada por quiebres

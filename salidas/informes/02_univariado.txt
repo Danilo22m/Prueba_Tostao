@@ -1,0 +1,177 @@
+ANALISIS UNIVARIADO - CASO A - OPTIMIZACION DE ABASTECIMIENTO
+====================================================================================
+Panel: 14560 filas diarias, 2080 filas semanales, 160 series, 13 semanas.
+Periodo: 2024-01-01 a 2024-03-31.
+
+
+1. EL OBJETIVO
+====================================================================================
+
+1.1 Unidades vendidas por dia
+------------------------------------------------------------------------------------
+  media    13.18    mediana    12.00    desviacion     7.79
+  minimo    0.00    maximo     58.00    coef. variacion  0.591
+  asimetria  1.020  curtosis  1.219  ceros 26 (0.18 %)
+  atipicos: 316 por rango intercuartilico, 127 por metodo robusto
+  dias sin venta: 26, repartidos en 14 series de 160
+
+1.2 Unidades vendidas por semana (el objetivo que se va a modelar)
+------------------------------------------------------------------------------------
+  media    92.24    mediana    86.00    desviacion    41.38
+  minimo   14.00    maximo    277.00    coef. variacion  0.449
+  asimetria  0.673  curtosis  0.334  ceros 0 (0.00 %)
+  atipicos: 19 por rango intercuartilico, 3 por metodo robusto
+
+
+2. ESTRUCTURA TEMPORAL
+====================================================================================
+
+2.1 Ciclo dentro de la semana
+------------------------------------------------------------------------------------
+            media   desv  indice
+lunes      10.920  6.016   0.829
+martes     10.907  6.116   0.828
+miercoles  10.688  6.203   0.811
+jueves     10.806  6.120   0.820
+viernes    16.423  8.681   1.246
+sabado     16.179  8.435   1.228
+domingo    16.319  8.808   1.238
+
+2.2 Autocorrelacion diaria, promedio de las 160 series
+------------------------------------------------------------------------------------
+          acf   pacf
+rezago              
+0       1.000  1.000
+1       0.153  0.153
+2      -0.006 -0.045
+3      -0.173 -0.171
+4      -0.169 -0.135
+5      -0.023 -0.002
+6       0.136  0.071
+7       0.287  0.190
+8       0.135  0.023
+9      -0.009 -0.011
+10     -0.169 -0.089
+11     -0.165 -0.063
+12     -0.021 -0.004
+13      0.097  0.011
+14      0.246  0.083
+15      0.107 -0.003
+16     -0.020 -0.033
+17     -0.161 -0.047
+18     -0.160 -0.043
+19     -0.026  0.004
+20      0.083 -0.016
+21      0.223  0.061
+  banda de significacion: +-0.205
+
+2.3 Autocorrelacion semanal, promedio de las 160 series
+------------------------------------------------------------------------------------
+          acf
+rezago       
+0       1.000
+1       0.101
+2       0.023
+3       0.005
+4      -0.039
+5      -0.043
+  banda de significacion con 13 puntos: +-0.544
+
+
+3. CUANTO SE PUEDE PREDECIR
+====================================================================================
+
+3.1 De donde viene la variacion de la demanda semanal
+------------------------------------------------------------------------------------
+  varianza total                 1711.8
+  entre series                   1539.8    90.0 %
+  dentro de cada serie            172.0    10.0 %
+
+3.2 Techo de ajuste, dentro de muestra
+------------------------------------------------------------------------------------
+  prediciendo el mismo numero para todo        R2 = 0.000
+  prediciendo la media de cada serie           R2 = 0.900
+  anadiendo la recta de cada serie             R2 = 0.935
+  la recta explica el 35.4 % de la variacion intra-serie
+
+3.3 Tendencia de cada serie en las 13 semanas
+------------------------------------------------------------------------------------
+  mediana   +0.8 %    desviacion  25.0 puntos    rango -55 % a +61 %
+  crecen mas de 20 %: 36 series
+  caen mas de 20 %:   33 series
+  planas, entre -5 y +5 %: 33 series
+
+
+4. LAS VARIABLES DE CONTEXTO
+====================================================================================
+
+4.1 Los 8 productos
+------------------------------------------------------------------------------------
+      id          nombre categoria  coste  precio  margen  margen%  almacen  dem.media    cv  nivel s/merma  nivel c/merma
+PROD_001           Tinto   Bebidas    800    2500    1700   68.000       10     57.581 0.307          0.994          0.677
+PROD_002  Café con Leche   Bebidas   1200    3500    2300   65.714       15     79.154 0.311          0.994          0.654
+PROD_003      Cappuccino   Bebidas   1500    4500    3000   66.667       15     81.727 0.301          0.995          0.664
+PROD_004     Pan de Bono Alimentos   1000    2800    1800   64.286       20     47.596 0.306          0.989          0.638
+PROD_005         Buñuelo Alimentos    800    2500    1700   68.000       20    124.958 0.330          0.988          0.675
+PROD_006       Croissant Alimentos   1200    3500    2300   65.714       25    111.135 0.325          0.989          0.652
+PROD_007 Pastel de Pollo Alimentos   1500    3500    2000   57.143       30    121.035 0.327          0.985          0.567
+PROD_008 Jugo de Naranja   Bebidas   2000    5000    3000   60.000       50    114.742 0.299          0.984          0.594
+
+4.2 Las 20 tiendas
+------------------------------------------------------------------------------------
+      id   ciudad  m2  dem.media/SKU  unidades  unid/m2
+STORE_08   Bogotá  49          137.0     14252    290.9
+STORE_16   Bogotá  49          140.2     14582    297.6
+STORE_02   Bogotá  43          102.8     10690    248.6
+STORE_03   Bogotá  42          112.1     11658    277.6
+STORE_04     Cali  40          108.5     11281    282.0
+STORE_18   Bogotá  38           96.5     10033    264.0
+STORE_19   Bogotá  37           99.6     10360    280.0
+STORE_12 Medellín  35           99.7     10367    296.2
+STORE_14   Bogotá  34           95.4      9918    291.7
+STORE_05   Bogotá  34           98.5     10248    301.4
+STORE_06   Bogotá  34           91.8      9543    280.7
+STORE_11   Bogotá  33           92.3      9595    290.8
+STORE_15   Bogotá  33           90.5      9410    285.2
+STORE_20 Medellín  33           95.1      9890    299.7
+STORE_10   Bogotá  32           81.4      8465    264.5
+STORE_13 Medellín  31           79.5      8264    266.6
+STORE_01   Bogotá  28           68.2      7095    253.4
+STORE_09 Medellín  25           65.1      6773    270.9
+STORE_17 Medellín  19           50.1      5206    274.0
+STORE_07   Bogotá  15           40.7      4231    282.1
+
+4.3 Las 3 ciudades
+------------------------------------------------------------------------------------
+  ciudad  tiendas  m2 medio  dem.media/SKU  unidades
+  Bogotá       14      35.8           96.2    140080
+Medellín        5      28.6           77.9     40500
+    Cali        1      40.0          108.5     11281
+
+4.4 Los patrones del generador (solo diagnostico)
+------------------------------------------------------------------------------------
+  patron  series  cambio mediano %  min %  max %  dem.media
+seasonal      57              -2.5  -47.9   39.6       94.1
+    down      44              -1.0  -54.7   60.7       93.4
+  random      32               2.8  -33.2   61.1       79.2
+      up      27               3.5  -44.4   44.6      102.0
+
+4.5 Balance de las variables categoricas
+------------------------------------------------------------------------------------
+            categorias      moda pct_moda  entropia balanceada
+id_tienda           20  STORE_01      5.0  4.321928       True
+id_producto          8  PROD_001     12.5       3.0       True
+categoria            2   Bebidas     50.0       1.0       True
+ciudad               3    Bogotá     70.0  1.076298      False
+
+
+5. GRAFICOS GENERADOS
+====================================================================================
+  salidas/figuras/01_distribucion_semanal.png
+  salidas/figuras/02_ciclo_dia_semana.png
+  salidas/figuras/03_autocorrelacion.png
+  salidas/figuras/04_descomposicion_varianza.png
+  salidas/figuras/05_tendencias_por_serie.png
+  salidas/figuras/06_demanda_por_producto.png
+  salidas/figuras/07_tamano_vs_demanda.png
+  salidas/figuras/08_patrones_ejemplo.png
