@@ -48,6 +48,17 @@ PUNTUALES = set(modelos.FAMILIAS_PUNTUALES) | {
     f"{n} (relativo)" for n in modelos.FAMILIAS_PUNTUALES
 }
 
+#: Parametrizacion que se opera: la relativa de cada familia mas la media
+#: movil, que no tiene version relativa porque seria una constante. Las
+#: figuras y el resumen por familia se construyen sobre este conjunto; la
+#: comparacion completa con las parametrizaciones absolutas queda en el informe.
+OPERADAS = set(modelos.FAMILIAS_RELATIVAS) | {"media movil + residuales"}
+
+
+def _limpio(nombre: str) -> str:
+    """Nombre de familia sin la marca de parametrizacion."""
+    return nombre.replace(" (relativo)", "")
+
 
 def main() -> int:  # noqa: PLR0915
     paths.asegurar_salidas()
@@ -110,6 +121,15 @@ def main() -> int:  # noqa: PLR0915
     central = central.sort_values("WAPE")
     central.index = [f"{i} [puntual]" if i in PUNTUALES else i for i in central.index]
     partes.append(central.round(4).to_string())
+
+    partes += ["", "  resumen por familia, parametrizacion operada:", ""]
+    metricas_centro = tabla[tabla["nivel"] == 0.5].set_index("familia")[["WAPE", "MAE", "sesgo"]]
+    resumen = pivote.join(metricas_centro)
+    resumen = resumen[resumen.index.isin(OPERADAS)].sort_values("media")
+    resumen.index = [_limpio(i) for i in resumen.index]
+    partes.append(resumen.round(4).to_string())
+    partes += ["", f"  gana «{resumen.index[0]}» por perdida pinball media; "
+                   f"«{resumen['WAPE'].idxmin()}» tiene el menor WAPE del centro."]
 
     partes += ["", "", "3. EL CLASICO POR SERIE", "=" * ANCHO, ""]
     historico = splits.separar(pnl, tuple(range(1, particion.prueba[0])))
@@ -179,10 +199,19 @@ def main() -> int:  # noqa: PLR0915
         encoding="utf-8",
     )
 
+    # Las figuras muestran la parametrizacion operada, con el nombre de cada
+    # familia limpio. La comparacion completa esta en las tablas de arriba.
+    pivote_operado = pivote[pivote.index.isin(OPERADAS)].copy()
+    pivote_operado.index = [_limpio(i) for i in pivote_operado.index]
+    banda_operada = banda[banda["familia"].isin(OPERADAS)].copy()
+    banda_operada["familia"] = banda_operada["familia"].map(_limpio)
+    predicciones_operadas = {
+        _limpio(n): predicciones[n] for n in orden if n in OPERADAS
+    }
     figuras = [
-        plots.comparacion_familias(pivote, paths.FIGURAS),
-        plots.significacion(banda, paths.FIGURAS),
-        plots.colchon_por_serie(predicciones, paths.FIGURAS),
+        plots.comparacion_familias(pivote_operado, paths.FIGURAS),
+        plots.significacion(banda_operada, paths.FIGURAS),
+        plots.colchon_por_serie(predicciones_operadas, paths.FIGURAS),
     ]
     partes += ["", "", "6. FICHEROS GENERADOS", "=" * ANCHO, ""]
     partes += [f"  {ruta_parametros.relative_to(paths.RAIZ)}"]

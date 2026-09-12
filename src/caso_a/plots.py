@@ -8,6 +8,7 @@ real sino un residuo.
 
 from __future__ import annotations
 
+import textwrap
 from pathlib import Path
 
 import matplotlib
@@ -454,12 +455,15 @@ def comparacion_familias(pivote: pd.DataFrame, destino: Path) -> Path:
                color=color, label=columna.replace("pinball ", "nivel "))
 
     ax.set_xticks(posiciones)
-    ax.set_xticklabels(datos.index, fontsize=9)
+    ax.set_xticklabels([textwrap.fill(str(n), 13) for n in datos.index], fontsize=9)
     ax.set_ylabel("Pérdida pinball (menor es mejor)")
     ganadora = datos.index[0]
     diferencia = 100 * (datos["media"].iloc[-1] / datos["media"].iloc[0] - 1)
-    ax.set_title(f"Gana «{ganadora}», con {diferencia:.1f} % de ventaja sobre la última")
-    ax.legend(ncols=len(columnas))
+    ax.set_title(f"Gana «{ganadora}», con {diferencia:.1f} % de ventaja sobre la última", pad=26)
+    # Las barras del nivel central llegan arriba del todo: la leyenda va fuera
+    # del area de dibujo para no taparlas.
+    ax.legend(loc="lower left", bbox_to_anchor=(0, 1.0), ncol=len(columnas),
+              frameon=False, handlelength=1.4, columnspacing=1.6)
     _limpiar(ax)
     return _guardar(fig, destino, "13_comparacion_familias")
 
@@ -494,18 +498,19 @@ def colchon_por_serie(predicciones: dict, destino: Path, alto: float = 0.9, bajo
     _preparar()
     fig, ax = plt.subplots(figsize=(8.4, 4.4))
     nombres = list(predicciones)
-    colores = (AZUL, AGUA, NARANJA, ROJO)
 
+    # Una fila por familia; la etiqueta del eje ya identifica cada una, asi que
+    # un solo color basta y la figura admite cualquier numero de familias.
     planas = []
-    for indice, (nombre, color) in enumerate(zip(nombres, colores)):
+    for indice, nombre in enumerate(nombres):
         colchon = predicciones[nombre][alto] - predicciones[nombre][bajo]
         dispersion = float(np.std(colchon))
         if dispersion < 0.01:
             planas.append(nombre)
         ruido = np.random.default_rng(indice).normal(0, 0.06, size=len(colchon))
         ax.scatter(colchon, np.full(len(colchon), indice) + ruido, s=9, alpha=0.32,
-                   color=color, edgecolor="none")
-        ax.scatter([float(np.mean(colchon))], [indice], s=110, color=color,
+                   color=AZUL, edgecolor="none")
+        ax.scatter([float(np.mean(colchon))], [indice], s=110, color=NARANJA,
                    edgecolor=SUPERFICIE, linewidth=2, zorder=4)
 
     ax.axvline(0, color=ROJO, linewidth=1.2, linestyle="--")
@@ -521,45 +526,66 @@ def colchon_por_serie(predicciones: dict, destino: Path, alto: float = 0.9, bajo
     return _guardar(fig, destino, "15_colchon_por_serie")
 
 
-def abanico_series(abanico: pd.DataFrame, destino: Path, n_series: int = 4) -> Path:
-    """Abanico de niveles frente a la demanda real, en unas pocas series.
+def abanico_series(
+    abanico: pd.DataFrame,
+    destino: Path,
+    niveles_por_producto: pd.Series,
+    n_mejores: int = 3,
+) -> Path:
+    """Pedido frente a venta real en las series mejor cubiertas y en la peor.
 
-    Se eligen series de volatilidad distinta para que se vea que el ancho del
-    abanico no es el mismo en todas.
+    La franja va del pronostico central al nivel que opera cada producto, y su
+    borde superior es la cantidad que se pediria. Las series se eligen por la
+    perdida pinball en ese nivel, relativa a la demanda media de cada una, para
+    que una serie grande y una pequena comparen en igualdad. Se muestran las
+    mejores y la peor, y el titulo lo declara.
     """
     _preparar()
-    columnas = sorted(c for c in abanico.columns if c.startswith("q0"))
-    bajo, medio, alto = columnas[0], columnas[len(columnas) // 2], columnas[-1]
+    claves = ["id_tienda", "id_producto"]
+    nivel_fila = abanico["id_producto"].map(niveles_por_producto).to_numpy(float)
+    columna = [f"q{n:.2f}" for n in nivel_fila]
+    pedido = np.array([abanico.loc[i, c] for i, c in zip(abanico.index, columna)], dtype=float)
+    real = abanico["unidades_vendidas"].to_numpy(float)
+    diferencia = real - pedido
+    perdida = np.where(diferencia >= 0, nivel_fila * diferencia, (nivel_fila - 1) * diferencia)
 
-    variabilidad = (
-        abanico.assign(ancho=abanico[alto] - abanico[bajo])
-        .groupby(["id_tienda", "id_producto"], observed=True)["ancho"].mean()
-        .sort_values()
+    por_serie = (
+        abanico[claves].assign(perdida=perdida, real=real)
+        .groupby(claves, observed=True).agg(perdida=("perdida", "mean"), media=("real", "mean"))
     )
-    indices = np.linspace(0, len(variabilidad) - 1, n_series).astype(int)
-    elegidas = variabilidad.index[indices]
+    por_serie["relativa"] = por_serie["perdida"] / por_serie["media"]
+    orden = por_serie.sort_values("relativa")
+    elegidas = list(orden.index[:n_mejores]) + [orden.index[-1]]
 
-    fig, ejes = plt.subplots(1, n_series, figsize=(3.1 * n_series, 3.5), sharey=False)
-    for ax, clave in zip(np.atleast_1d(ejes), elegidas):
+    fig, ejes = plt.subplots(1, len(elegidas), figsize=(3.1 * len(elegidas), 3.7), sharey=False)
+    for posicion, (ax, clave) in enumerate(zip(np.atleast_1d(ejes), elegidas)):
+        nivel = float(niveles_por_producto[clave[1]])
+        alto = f"q{nivel:.2f}"
         sub = abanico[
             (abanico["id_tienda"] == clave[0]) & (abanico["id_producto"] == clave[1])
         ].sort_values("semana")
-        ax.fill_between(sub["semana"], sub[bajo], sub[alto], color=AZUL, alpha=0.18)
-        ax.plot(sub["semana"], sub[medio], color=AZUL, linewidth=2)
+        ax.fill_between(sub["semana"], sub["q0.50"], sub[alto], color=AZUL, alpha=0.16,
+                        label="colchón" if posicion == 0 else None)
+        ax.plot(sub["semana"], sub["q0.50"], color=AZUL, linewidth=1.8,
+                label="pronóstico central" if posicion == 0 else None)
+        ax.plot(sub["semana"], sub[alto], color=TINTA, linewidth=1.8, linestyle="--",
+                label="pedido al nivel de servicio" if posicion == 0 else None)
         ax.plot(sub["semana"], sub["unidades_vendidas"], color=NARANJA, linewidth=2,
-                marker="o", markersize=5, markerfacecolor=SUPERFICIE, markeredgewidth=1.6)
-        ancho = float((sub[alto] - sub[bajo]).mean())
-        ax.set_title(f"{clave[1]} · {clave[0]}\nabanico medio {ancho:.0f} u", fontsize=10)
+                marker="o", markersize=5, markerfacecolor=SUPERFICIE, markeredgewidth=1.6,
+                label="venta real" if posicion == 0 else None)
+        etiqueta = "la peor de %d" % len(orden) if posicion == len(elegidas) - 1 else "entre las mejores"
+        ax.set_title(f"{clave[1]} · {clave[0]}\nnivel {nivel:.2f} · {etiqueta}", fontsize=10)
         ax.set_xlabel("Semana")
         ax.set_xticks(sorted(sub["semana"].unique()))
         _limpiar(ax)
     np.atleast_1d(ejes)[0].set_ylabel("Unidades")
-    estrecho, ancho_max = variabilidad.iloc[0], variabilidad.iloc[-1]
+
     fig.suptitle(
-        f"El abanico se adapta: de {estrecho:.0f} a {ancho_max:.0f} unidades según la serie",
-        fontsize=12.5, fontweight="bold", color=TINTA,
+        f"Pedido frente a venta real: {n_mejores} de las series mejor cubiertas y la peor de {len(orden)}",
+        fontsize=12.5, fontweight="bold", color=TINTA, y=0.99,
     )
-    fig.tight_layout(rect=(0, 0, 1, 0.88))
+    fig.legend(loc="lower center", ncol=4, frameon=False, fontsize=9, bbox_to_anchor=(0.5, 0.0))
+    fig.tight_layout(rect=(0, 0.07, 1, 0.95))
     ruta = destino / "16_abanico_series.png"
     fig.savefig(ruta, dpi=PPP, facecolor=SUPERFICIE)
     plt.close(fig)

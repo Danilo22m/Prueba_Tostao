@@ -19,22 +19,23 @@ Cobertura empírica frente al nivel prometido, sobre las 480 decisiones de prueb
 
 | Nivel | Cobertura | Desvío | Unidades medias |
 |---|---|---|---|
-| 0,50 | 0,510 | +0,010 | 93,2 |
-| 0,59 | 0,633 | +0,043 | 96,8 |
-| 0,65 | 0,675 | +0,025 | 98,6 |
-| 0,68 | 0,692 | +0,012 | 99,5 |
-| 0,74 | 0,735 | −0,005 | 101,7 |
-| 0,81 | 0,785 | −0,025 | 104,6 |
-| 0,90 | 0,888 | −0,013 | 110,6 |
-| 0,98 | 0,992 | +0,012 | 124,9 |
-| 0,99 | 0,996 | +0,006 | 128,7 |
+| 0,50 | 0,502 | +0,002 | 92,9 |
+| 0,59 | 0,610 | +0,020 | 96,2 |
+| 0,65 | 0,660 | +0,010 | 98,0 |
+| 0,68 | 0,685 | +0,005 | 99,2 |
+| 0,74 | 0,719 | −0,021 | 101,0 |
+| 0,81 | 0,785 | −0,025 | 104,5 |
+| 0,90 | 0,862 | −0,037 | 109,1 |
+| 0,98 | 0,992 | +0,012 | 124,4 |
+| 0,99 | 0,994 | +0,004 | 126,9 |
 
-El desvío medio es de +0,006 y el peor caso de 0,043. En la figura 17 los puntos
-abrazan la diagonal, y seis de los diecisiete se quedan cortos frente a ocho en
-la versión absoluta.
+El desvío medio es de −0,005 y el peor caso de 0,037, en el nivel 0,90. En la
+figura 17 los puntos abrazan la diagonal. Ocho de los diecisiete se quedan
+ligeramente cortos, todos entre el 0,72 y el 0,90, que son niveles que la
+política recomendada no opera.
 
-**Qué significa.** Cuando la política prometa cubrir el 68 % de las semanas, se
-cubre el 69 %. El nivel de servicio que se le ofrece a negocio es real y no una
+**Qué significa.** Cuando la política promete cubrir el 68 % de las semanas, se
+cubre el 68,5 %. El nivel de servicio que se le ofrece a negocio es real y no una
 etiqueta.
 
 ## 2. El nivel 0,99 ya es utilizable
@@ -45,9 +46,9 @@ toda la rejilla.
 
 | | Parametrización absoluta | Relativa |
 |---|---|---|
-| Unidades medias en el nivel 0,99 | 208,5 | **128,7** |
+| Unidades medias en el nivel 0,99 | 208,5 | **126,9** |
 | Veces la demanda media | 2,24 | **1,38** |
-| Cobertura | 0,988 | 0,996 |
+| Cobertura | 0,988 | 0,994 |
 
 **Por qué se arregló.** Estimar el percentil 99 de una proporción es mucho más
 fácil que estimarlo en unidades, porque todas las series contribuyen a la misma
@@ -82,14 +83,35 @@ La corrección es ordenar los valores de cada fila. No cambia el conjunto de
 cantidades estimadas, solo su asignación a niveles, y garantiza que pedir con más
 protección nunca devuelva menos unidades. Tras ordenar no queda ningún cruce.
 
-## 4. El abanico se adapta a cada serie
+## 4. El pedido frente a la venta real, serie a serie
 
-La figura 16 muestra cuatro series de volatilidad distinta con su abanico. El
-ancho medio entre el nivel alto y el central va de 5,4 a 37,9 unidades según la
-serie, casi el doble de amplitud que en la versión absoluta.
+La figura 16 dibuja, para cuatro series, el pronóstico central, el pedido al
+nivel de servicio del producto en el escenario con merma, y la venta real de
+las tres semanas de prueba. La franja entre las dos líneas es el colchón.
 
-Es la propiedad por la que se eligió esta familia frente a las puntuales: una
-serie tranquila no recibe el mismo margen que una volátil.
+Las cuatro series no se eligen a mano. Se ordenan las 160 por la pérdida
+pinball en su nivel de operación, relativa a la demanda media de cada una, y se
+muestran tres de las mejor cubiertas y la peor. El título de la figura lo
+declara, para que nadie lea las tres buenas como si fueran representativas.
+
+**Lo que se ve en las tres buenas.** La venta real se mueve alrededor del
+pronóstico central y el pedido la cubre casi siempre, con un sobrante pequeño.
+El colchón es distinto en cada una: unas 10 unidades en una serie de 180 y unas
+4 en una de 60. El nivel es el mismo, la cantidad que representa la decide la
+historia de cada serie.
+
+**Lo que se ve en la peor.** Es STORE_09 con Café con Leche, la misma que el
+diagnóstico señala como la de mayor error de las 160. El modelo pronostica
+unas 45 unidades y se venden unas 30: pide de más las tres semanas. No es un
+fallo del abanico, es una serie donde el nivel reciente no describe lo que
+está pasando, y va a la lista de las once que hay que revisar antes del piloto.
+
+**Por qué esta figura y no una de intervalos.** Una versión anterior dibujaba
+la franja del nivel 0,50 al 0,99, y se leía como intervalo de confianza sin
+serlo: por construcción la venta real cae bajo el centro la mitad de las
+semanas, y la figura parecía fallar cuando no fallaba. La franja actual va del
+centro al pedido, que es la lectura de negocio: si la venta queda bajo la línea
+discontinua, la tienda cubrió la demanda; si la supera, hubo faltante.
 
 ## 5. Sobre reutilizar el alfa en toda la rejilla
 

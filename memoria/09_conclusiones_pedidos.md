@@ -41,24 +41,30 @@ peor que un error.
 
 ## 3. El colchón sigue al margen, y ahora se ve en unidades
 
-| Producto | Nivel | Pronóstico | Objetivo | Colchón | Colchón % |
-|---|---|---|---|---|---|
-| Tinto | 0,68 | 58,7 | 63,5 | 4,9 | 8,3 % |
-| Buñuelo | 0,67 | 125,7 | 133,4 | 7,7 | 6,1 % |
-| Cappuccino | 0,66 | 83,1 | 89,2 | 6,1 | 7,3 % |
-| Café con Leche | 0,65 | 80,2 | 85,5 | 5,2 | 6,5 % |
-| Croissant | 0,65 | 115,2 | 122,0 | 6,8 | 5,9 % |
-| Pan de Bono | 0,64 | 49,4 | 52,8 | 3,4 | 6,8 % |
-| Jugo de Naranja | 0,59 | 112,9 | 116,6 | 3,7 | 3,3 % |
-| Pastel de Pollo | 0,57 | 120,1 | 123,4 | 3,3 | 2,8 % |
+| Producto | Margen | Nivel | Pronóstico | Objetivo | Colchón | Colchón % |
+|---|---|---|---|---|---|---|
+| Tinto | 68,0 % | 0,68 | 58,4 | 63,3 | 4,9 | 8,4 % |
+| Buñuelo | 68,0 % | 0,67 | 125,4 | 132,7 | 7,2 | 5,7 % |
+| Cappuccino | 66,7 % | 0,66 | 82,8 | 88,7 | 5,9 | 7,1 % |
+| Café con Leche | 65,7 % | 0,65 | 80,0 | 85,0 | 5,0 | 6,3 % |
+| Croissant | 65,7 % | 0,65 | 114,9 | 121,5 | 6,6 | 5,7 % |
+| Pan de Bono | 64,3 % | 0,64 | 49,1 | 52,1 | 2,9 | 6,0 % |
+| Jugo de Naranja | 60,0 % | 0,59 | 112,6 | 116,0 | 3,4 | 3,0 % |
+| Pastel de Pollo | 57,1 % | 0,57 | 119,8 | 123,0 | 3,1 | 2,6 % |
 
 **Es la respuesta visible a la pregunta del enunciado.** Piden proponer cómo usar
 la incertidumbre junto con los márgenes para decidir si el pedido es agresivo o
-conservador. Esta tabla es esa respuesta, y el orden del colchón porcentual
-coincide exactamente con el del margen.
+conservador. Esta tabla es esa respuesta. El producto con más margen se protege
+más del triple que el de menos margen, y nadie lo decidió a mano.
 
-El Tinto se protege un 8,3 % por encima de lo esperado porque perder una venta
-cuesta el doble que tirarlo. El Pastel de Pollo solo un 2,8 % porque sus dos
+El orden del colchón porcentual no es exactamente el del margen, porque el
+colchón en unidades depende también de la volatilidad de cada producto: el
+Cappuccino, con menos margen que el Buñuelo, tiene un colchón mayor en
+proporción porque sus series oscilan más. Lo que sí es exacto es el orden de
+los niveles, que solo dependen de los costes.
+
+El Tinto se protege un 8,4 % por encima de lo esperado porque perder una venta
+cuesta el doble que tirarlo. El Pastel de Pollo solo un 2,6 % porque sus dos
 costes se parecen mucho más.
 
 ## 4. La operación resultante

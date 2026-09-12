@@ -28,6 +28,10 @@ from caso_a import panel, paths, plots, rejilla, splits  # noqa: E402
 
 ANCHO = 84
 
+#: Escenario con el que se dibuja el pedido en la figura del abanico. Es el
+#: recomendado en la memoria: en cafeteria el sobrante no se vende al dia siguiente.
+ESCENARIO_PRINCIPAL = "con merma"
+
 #: Familia elegida en el paso de seleccion. La parametrizacion relativa
 #: aprende la demanda como proporcion de la media reciente y devuelve la
 #: prediccion en unidades.
@@ -120,8 +124,9 @@ def main() -> int:
     ruta_abanico = paths.PARAMETROS / "abanico_prueba.csv"
     abanico.to_csv(ruta_abanico, index=False, encoding="utf-8")
 
+    escenario = next(e for e in costes.ESCENARIOS if e.nombre == ESCENARIO_PRINCIPAL)
     figuras = [
-        plots.abanico_series(abanico, paths.FIGURAS),
+        plots.abanico_series(abanico, paths.FIGURAS, costes.politica_por_producto(catalogo, escenario)),
         plots.cobertura_niveles(cobertura, paths.FIGURAS),
     ]
 

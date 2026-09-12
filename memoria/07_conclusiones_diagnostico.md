@@ -14,10 +14,10 @@ la constante `FAMILIA` del script correspondiente. Ver `T1_parametrizacion_relat
 
 | Tramo por volumen | Demanda media | MAE | Error porcentual | Sesgo |
 |---|---|---|---|---|
-| 1, el más bajo | 44,6 | 7,93 | **17,8 %** | −3,44 |
-| 2 | 73,1 | 9,05 | 12,4 % | +0,15 |
-| 3 | 102,4 | 11,10 | 10,8 % | −3,20 |
-| 4, el más alto | 153,8 | 15,84 | 10,3 % | +6,85 |
+| 1, el más bajo | 44,6 | 7,88 | **17,7 %** | −3,17 |
+| 2 | 73,1 | 9,06 | 12,4 % | +0,42 |
+| 3 | 102,4 | 11,04 | 10,8 % | −2,93 |
+| 4, el más alto | 153,8 | 15,92 | 10,4 % | +7,12 |
 
 **Por qué ocurre.** En una serie que vende 45 unidades, un error de 8 es un 18 %.
 En una que vende 154, un error de 16 es un 10 %. La demanda baja es
@@ -82,25 +82,36 @@ tener el mismo ancho absoluto en una serie que vende 45 y en una que vende 154.
 El modelo elegido ya lo gradúa, y es otro motivo por el que un colchón plano
 sería incorrecto.
 
-## 5. Once series necesitan revisión antes del piloto
+## 5. Diez series necesitan revisión antes del piloto
 
-De las 160, once superan el doble del error mediano, frente a trece en la versión
-absoluta. Las cinco peores:
+De las 160, diez superan el doble del error mediano. Las cinco peores, con el
+error en unidades para que la cifra sea tangible:
 
-| Serie | Demanda media | Error | Sesgo |
-|---|---|---|---|
-| STORE_09 / Café con Leche | 30,7 | 43,0 % | −13,2 |
-| STORE_09 / Croissant | 71,0 | 30,1 % | −3,4 |
-| STORE_07 / Buñuelo | 34,7 | 29,8 % | −10,3 |
-| STORE_14 / Café con Leche | 70,3 | 29,1 % | −2,4 |
-| STORE_09 / Cappuccino | 53,0 | 28,9 % | −14,6 |
+| Serie | Demanda media | Error | Unidades por semana | Sesgo |
+|---|---|---|---|---|
+| STORE_09 / Café con Leche | 30,7 | 42,1 % | 12,9 | −12,9 |
+| STORE_09 / Croissant | 71,0 | 30,0 % | 21,3 | −3,1 |
+| STORE_14 / Café con Leche | 70,3 | 29,2 % | 20,5 | −2,2 |
+| STORE_07 / Buñuelo | 34,7 | 29,0 % | 10,1 | −10,1 |
+| STORE_09 / Cappuccino | 53,0 | 28,7 % | 15,2 | −14,3 |
 
-Tres de las cinco son de STORE_09. Todas tienen sesgo negativo, es decir el
-modelo pide de más en todas.
+Tres de las cinco son de STORE_09. Y hay dos problemas distintos mezclados:
 
-**Acción concreta.** Revisar esas once series antes de implantar, y excluirlas
-del piloto o vigilarlas aparte. Que STORE_09 aparezca tres veces sugiere algo
-propio de esa tienda y no del modelo.
+- **Sesgo del tamaño del error**, en Café con Leche y Cappuccino de STORE_09 y en
+  Buñuelo de STORE_07: el modelo pide de más cada semana. Es un desvío
+  sistemático y apunta a que el nivel reciente de esas series no describe lo
+  que está pasando.
+- **Sesgo pequeño con error grande**, en Croissant de STORE_09 y Café con Leche
+  de STORE_14: el modelo falla arriba y abajo por igual. Son series volátiles,
+  no sesgadas, y lo que les falta es colchón.
+
+**Acción concreta.** Revisar esas diez series antes de implantar, y excluirlas
+del piloto o vigilarlas aparte. Que STORE_09 aparezca tres veces, con los dos
+tipos de problema, sugiere algo propio de esa tienda y no del modelo.
+
+**Nota de trazabilidad.** Una versión anterior de esta sección decía once
+series y daba cifras algo distintas; eran las del modelo sin calibrar. Las de
+arriba son las del informe 07 con la calibración aplicada.
 
 ## 6. La interpretabilidad mejoró de forma sustancial
 
@@ -120,7 +131,7 @@ estandarizadas, que era lo que daba la versión absoluta, no.
 |---|---|---|
 | 1 | Probar un alfa menor para reducir el sesgo residual por volumen | Mejora previa al piloto |
 | 2 | Reportar el error por tramo de volumen, no solo el agregado | Presentación |
-| 3 | Vigilar las once series con error alto en el piloto | Plan de implantación |
+| 3 | Vigilar las diez series con error alto en el piloto | Plan de implantación |
 | 4 | Revisar STORE_09 aparte, por concentrar tres de las cinco peores | Plan de implantación |
 | 5 | Usar la ausencia de autocorrelación residual como validación del diseño | Memoria técnica |
 | 6 | Presentar los coeficientes en porcentaje | Presentación |
