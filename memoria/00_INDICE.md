@@ -23,7 +23,7 @@ está escrito a mano y se actualiza cuando cambian las conclusiones.
 | 14 | Optimizador del pedido | `run_pedidos.py` | `09_pedidos.txt` | `09` |
 | 15 | Simulación de políticas y ahorro | `run_politicas.py` | `10_politicas.txt` | `10` |
 | 16 | Entrega: pedido de la semana siguiente | `run_entrega.py` | `11_entrega.txt` | `11` |
-| 17 | Presentación ejecutiva | pendiente | — | — |
+
 
 **Orden de ejecución.** `main.py` ejecuta los once pasos en este orden y se
 detiene en el primero que falle. Los scripts también se pueden lanzar sueltos:
