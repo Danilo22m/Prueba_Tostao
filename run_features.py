@@ -35,19 +35,30 @@ CANDIDATAS = [
 
 def barrido_ventanas(pnl: pd.DataFrame, particion: splits.Particion,
                      ventanas: range) -> pd.DataFrame:
-    """Error de la media movil segun cuantas semanas promedie."""
+    """Error de la media movil segun cuantas semanas promedie.
+
+    Se evalua sobre las semanas de validacion, no sobre las de prueba. Elegir la
+    longitud mirando la prueba seria ajustar un parametro contra el conjunto que
+    debe quedar intacto, y dejaria la cifra final optimista.
+
+    Las semanas de validacion son las de los pliegues de ventana expansiva, es
+    decir las ultimas del tramo de entrenamiento.
+    """
     ordenado = pnl.sort_values(baselines.CLAVE_SERIE + ["semana"]).copy()
     grupo = ordenado.groupby(baselines.CLAVE_SERIE, observed=True)[baselines.OBJETIVO]
     for v in ventanas:
         ordenado[f"mm{v}"] = grupo.transform(
             lambda s, v=v: s.shift(1).rolling(v, min_periods=v).mean()
         )
-    prueba = splits.separar(ordenado, particion.prueba)
-    real = prueba[baselines.OBJETIVO].to_numpy(float)
+    semanas_validacion = tuple(
+        validacion for _, validacion in splits.pliegues_expansivos(particion.entrenamiento)
+    )
+    validacion = splits.separar(ordenado, semanas_validacion)
+    real = validacion[baselines.OBJETIVO].to_numpy(float)
 
     filas = []
     for v in ventanas:
-        pred = prueba[f"mm{v}"].to_numpy(float)
+        pred = validacion[f"mm{v}"].to_numpy(float)
         if np.isnan(pred).any():
             continue
         filas.append({"ventana": v, "WAPE": metrics.wape(real, pred),
@@ -111,7 +122,11 @@ def main() -> int:
         if semanas == particion.prueba:
             tabla_prueba = tabla
 
-    partes += ["", "", "5. LONGITUD OPTIMA DE LA MEDIA MOVIL", "=" * ANCHO, ""]
+    semanas_validacion = tuple(
+        v for _, v in splits.pliegues_expansivos(particion.entrenamiento)
+    )
+    partes += ["", "", "5. LONGITUD OPTIMA DE LA MEDIA MOVIL", "=" * ANCHO, "",
+              f"  Evaluado sobre las semanas de validacion {semanas_validacion}, no sobre prueba.", ""]
     barrido = barrido_ventanas(pnl, particion, range(2, 9))
     partes.append(barrido.round(4).to_string(index=False))
 

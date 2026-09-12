@@ -17,14 +17,9 @@ import pandas as pd
 CLAVE_SERIE = ["id_tienda", "id_producto"]
 OBJETIVO = "unidades_vendidas"
 
-#: Rezagos en semanas que se construyen.
-REZAGOS = (1, 2, 3, 4)
-
-#: Ventanas de media y desviacion movil, en semanas.
-VENTANAS = (2, 3, 4)
-
-#: Ventana sobre la que se ajusta la pendiente reciente.
-VENTANA_PENDIENTE = 4
+#: Semanas de historia que consume la variable mas larga. Es el parametro
+#: que decide cuantas semanas iniciales se gastan y cuantas filas quedan.
+MAX_REZAGO = 4
 
 
 def _pendiente(valores: np.ndarray) -> float:
@@ -35,11 +30,14 @@ def _pendiente(valores: np.ndarray) -> float:
     return float(np.polyfit(x, valores, 1)[0])
 
 
-def construir(panel: pd.DataFrame) -> pd.DataFrame:
+def construir(panel: pd.DataFrame, max_rezago: int = MAX_REZAGO) -> pd.DataFrame:
     """Anade al panel las variables de historia de cada serie.
 
     Args:
         panel: Panel semanal enriquecido, ordenado o no.
+        max_rezago: Semanas de historia que consume la variable mas larga.
+            Determina cuantas semanas iniciales quedan sin fila utilizable:
+            con un maximo de 4 se pierden las cuatro primeras, con 2 solo dos.
 
     Returns:
         El panel con las columnas nuevas. Las primeras semanas de cada serie
@@ -48,38 +46,42 @@ def construir(panel: pd.DataFrame) -> pd.DataFrame:
     marco = panel.sort_values(CLAVE_SERIE + ["semana"]).copy()
     grupo = marco.groupby(CLAVE_SERIE, observed=True)[OBJETIVO]
 
-    for k in REZAGOS:
+    for k in range(1, max_rezago + 1):
         marco[f"rezago_{k}"] = grupo.shift(k)
 
     # Las ventanas se aplican sobre la serie ya desplazada una semana, para que
     # nunca incluyan el valor que se quiere predecir.
     desplazada = grupo.shift(1)
-    for v in VENTANAS:
+    claves = [marco["id_tienda"], marco["id_producto"]]
+    ventanas = [v for v in range(2, max_rezago + 1)]
+
+    for v in ventanas:
         marco[f"media_{v}"] = (
-            desplazada.groupby([marco["id_tienda"], marco["id_producto"]], observed=True)
+            desplazada.groupby(claves, observed=True)
             .rolling(v, min_periods=v).mean().reset_index(level=[0, 1], drop=True)
         )
         marco[f"desv_{v}"] = (
-            desplazada.groupby([marco["id_tienda"], marco["id_producto"]], observed=True)
+            desplazada.groupby(claves, observed=True)
             .rolling(v, min_periods=v).std().reset_index(level=[0, 1], drop=True)
         )
 
     marco["pendiente"] = (
-        desplazada.groupby([marco["id_tienda"], marco["id_producto"]], observed=True)
-        .rolling(VENTANA_PENDIENTE, min_periods=VENTANA_PENDIENTE)
+        desplazada.groupby(claves, observed=True)
+        .rolling(max_rezago, min_periods=max_rezago)
         .apply(_pendiente, raw=True)
         .reset_index(level=[0, 1], drop=True)
     )
 
-    # Senales derivadas: posicion del ultimo dato respecto a su propio nivel y
-    # dispersion relativa de la serie.
-    marco["razon_ultima"] = marco["rezago_1"] / marco["media_4"]
-    marco["cv_reciente"] = marco["desv_4"] / marco["media_4"]
+    # Senales derivadas, referidas siempre a la ventana mas larga disponible.
+    larga = max(ventanas) if ventanas else max_rezago
+    marco["razon_ultima"] = marco["rezago_1"] / marco[f"media_{larga}"]
+    marco["cv_reciente"] = marco[f"desv_{larga}"] / marco[f"media_{larga}"]
 
     return marco
 
 
-def verificar_sin_fuga(panel: pd.DataFrame, semana_corte: int) -> None:
+def verificar_sin_fuga(panel: pd.DataFrame, semana_corte: int,
+                       max_rezago: int = MAX_REZAGO) -> None:
     """Comprueba que ninguna variable usa informacion del futuro.
 
     Reconstruye las variables ocultando todo lo posterior al corte y exige que
@@ -89,8 +91,8 @@ def verificar_sin_fuga(panel: pd.DataFrame, semana_corte: int) -> None:
     Raises:
         AssertionError: Si alguna columna difiere.
     """
-    completo = construir(panel)
-    recortado = construir(panel[panel["semana"] <= semana_corte])
+    completo = construir(panel, max_rezago)
+    recortado = construir(panel[panel["semana"] <= semana_corte], max_rezago)
 
     columnas = [c for c in completo.columns if c not in panel.columns]
     izq = completo[completo["semana"] <= semana_corte].sort_values(CLAVE_SERIE + ["semana"])

@@ -1,0 +1,155 @@
+DIAGNOSTICO DEL MODELO - CASO A
+====================================================================================
+
+  familia: regresion cuantilica
+  pronostico central: q0.50
+  filas evaluadas: 480 (semanas [11, 12, 13])
+
+
+1. ERROR POR PRODUCTO
+====================================================================================
+
+          grupo  n  demanda_media    MAE  WAPE  sesgo
+ Café con Leche 60         80.267 12.100 0.151 -0.147
+    Pan de Bono 60         49.650  7.266 0.146 -1.220
+Pastel de Pollo 60        122.867 15.691 0.128  4.794
+Jugo de Naranja 60        112.717 14.052 0.125  0.388
+          Tinto 60         58.400  7.177 0.123 -1.517
+     Cappuccino 60         81.833  9.213 0.113 -1.298
+      Croissant 60        113.517 12.156 0.107  0.406
+        Buñuelo 60        126.917 13.020 0.103  3.783
+
+
+2. ERROR POR TIENDA
+====================================================================================
+
+   grupo  n  demanda_media    MAE  WAPE  sesgo
+STORE_07 24         41.417  7.849 0.190 -3.797
+STORE_09 24         62.333 11.479 0.184 -3.416
+STORE_17 24         49.000  8.395 0.171 -2.401
+STORE_13 24         77.833 10.758 0.138 -1.397
+STORE_11 24         97.750 13.240 0.135  2.478
+STORE_16 24        145.833 19.120 0.131  6.640
+STORE_18 24         95.042 12.345 0.130 -0.438
+STORE_01 24         64.333  8.300 0.129 -2.361
+STORE_12 24        107.542 13.727 0.128  5.842
+STORE_14 24         99.000 12.509 0.126  4.386
+STORE_20 24        100.333 12.247 0.122 -0.090
+STORE_19 24         97.792 11.609 0.119 -1.156
+STORE_06 24         92.250 10.768 0.117  0.219
+STORE_05 24        105.208 12.101 0.115  3.068
+STORE_04 24        109.500 11.705 0.107 -1.471
+STORE_08 24        140.167 14.726 0.105  5.407
+STORE_15 24         90.917  9.125 0.100  0.063
+STORE_02 24         97.250  9.670 0.099 -1.533
+STORE_03 24        114.417 10.771 0.094  5.184
+STORE_10 24         77.500  6.245 0.081 -2.258
+
+
+3. ERROR SEGUN EL VOLUMEN DE LA SERIE
+====================================================================================
+
+  Las series se reparten en cuatro tramos de igual tamano segun su demanda
+  media. El error en unidades favorece a las series pequenas y el porcentual
+  a las grandes: se leen juntos.
+
+  grupo   n  demanda_media    MAE  WAPE  sesgo
+tramo 1 120         44.558  8.379 0.188 -4.955
+tramo 2 123         73.098  8.941 0.122 -0.307
+tramo 3 117        102.385 10.763 0.105 -2.276
+tramo 4 120        153.775 17.300 0.113 10.083
+
+
+4. ERROR POR TIPO DE PATRON
+====================================================================================
+
+   grupo   n  demanda_media    MAE  WAPE  sesgo
+      up  81        106.728 13.337 0.125  3.940
+  random  96         79.375  9.657 0.122 -0.242
+seasonal 171         93.942 11.369 0.121  0.088
+    down 132         94.250 11.281 0.120  0.002
+
+
+5. DISTRIBUCION DEL ERROR ENTRE LAS SERIES
+====================================================================================
+
+count    160.0000
+mean       0.1341
+std        0.0721
+min        0.0125
+10%        0.0554
+50%        0.1241
+90%        0.2155
+max        0.4719
+
+  las cinco series con mas error:
+              grupo  n  demanda_media    MAE  WAPE   sesgo
+STORE_09 / PROD_002  3         30.667 14.473 0.472 -14.473
+STORE_17 / PROD_004  3         16.333  6.351 0.389  -6.351
+STORE_07 / PROD_005  3         34.667 11.995 0.346 -11.995
+STORE_09 / PROD_006  3         71.000 21.441 0.302  -3.074
+STORE_09 / PROD_003  3         53.000 15.166 0.286 -15.037
+
+  series con error superior al doble de la mediana: 13 de 160
+
+
+6. DIAGNOSTICO DE RESIDUALES
+====================================================================================
+
+  media                              0.6485
+  desviacion                        14.9170
+  asimetria                          0.6083
+  corr_pred_error                    0.3992
+  series_con_autocorrelacion              0
+  series_evaluadas                      160
+
+  corr_pred_error mide heterocedasticidad: si el error absoluto crece con
+  el valor predicho, el modelo no es igual de fiable en series grandes y
+  pequenas. series_con_autocorrelacion cuenta cuantas conservan estructura
+  temporal sin capturar, segun el contraste de Ljung-Box al 5 %.
+
+
+7. IMPORTANCIA POR PERMUTACION
+====================================================================================
+
+  Degradacion de la perdida pinball en el nivel 0.65 al barajar
+  cada variable en las semanas de prueba, promediada sobre 20 repeticiones.
+
+    variable  perdida_barajada  degradacion  degradacion_pct  desviacion
+     media_4           20.0950      14.8437         282.6662      0.4382
+    rezago_1            6.7429       1.4915          28.4028      0.1181
+   tamano_m2            5.2517       0.0004           0.0067      0.0002
+      desv_4            5.2513      -0.0000          -0.0000      0.0000
+razon_ultima            5.2513      -0.0000          -0.0000      0.0000
+ cv_reciente            5.2484      -0.0029          -0.0557      0.0067
+
+
+8. COEFICIENTES DEL MODELO
+====================================================================================
+
+  Sobre variables estandarizadas: indican cuantas unidades cambia la
+  prediccion por cada desviacion tipica de esa variable.
+
+            variable  coeficiente
+             media_4      32.5679
+            rezago_1       6.3750
+         cv_reciente      -0.2943
+           tamano_m2       0.0102
+              desv_4       0.0000
+        razon_ultima       0.0000
+id_producto_PROD_001       0.0000
+id_producto_PROD_002       0.0000
+id_producto_PROD_003       0.0000
+id_producto_PROD_004       0.0000
+id_producto_PROD_005       0.0000
+id_producto_PROD_006       0.0000
+id_producto_PROD_007       0.0000
+id_producto_PROD_008       0.0000
+
+
+9. GRAFICOS GENERADOS
+====================================================================================
+
+  salidas/figuras/18_error_por_grupo.png
+  salidas/figuras/19_residuales.png
+  salidas/figuras/20_importancia.png

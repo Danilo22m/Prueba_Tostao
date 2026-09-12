@@ -1,4 +1,7 @@
-"""Tablas descriptivas de producto, tienda y patron, para informe y PPT."""
+"""Tablas descriptivas de producto, tienda y patron.
+
+Alimentan tanto el informe en texto como las figuras del analisis.
+"""
 
 from __future__ import annotations
 

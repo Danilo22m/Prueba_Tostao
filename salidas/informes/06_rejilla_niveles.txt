@@ -1,0 +1,118 @@
+REJILLA DE NIVELES - CASO A
+====================================================================================
+
+  familia: regresion cuantilica
+  hiperparametros: {"alpha": 0.029854447278927155}
+  entrenamiento 5-10 (6 semanas), prueba 11-13 (3 semanas), prediccion semana 14
+  filas: 960 de entrenamiento, 480 de prueba
+
+
+1. NIVELES ENTRENADOS
+====================================================================================
+
+  17 modelos, uno por nivel:
+  [0.5, 0.57, 0.59, 0.64, 0.65, 0.66, 0.67, 0.68, 0.72, 0.74, 0.78, 0.79, 0.8, 0.81, 0.9, 0.98, 0.99]
+
+  Los hiperparametros se optimizaron en el nivel de operacion y se reutilizan
+  en toda la rejilla. Con 960 filas, reoptimizar diecisiete veces invitaria a
+  ajustarse al ruido de la validacion.
+
+
+2. ORDEN DE LOS NIVELES
+====================================================================================
+
+           par  cruces  pct_filas  cruce_maximo
+q0.50 -> q0.57       0      0.000         0.000
+q0.57 -> q0.59       1      0.208         0.067
+q0.59 -> q0.64       4      0.833         0.558
+q0.64 -> q0.65      12      2.500         0.152
+q0.65 -> q0.66      37      7.708         0.247
+q0.66 -> q0.67      26      5.417         0.252
+q0.67 -> q0.68      10      2.083         0.203
+q0.68 -> q0.72       0      0.000         0.000
+q0.72 -> q0.74       0      0.000         0.000
+q0.74 -> q0.78       0      0.000         0.000
+q0.78 -> q0.79       0      0.000         0.000
+q0.79 -> q0.80       2      0.417         0.079
+q0.80 -> q0.81       2      0.417         0.150
+q0.81 -> q0.90       0      0.000         0.000
+q0.90 -> q0.98       6      1.250         2.642
+q0.98 -> q0.99      11      2.292        44.082
+
+  cruces totales: 111 sobre 480 filas y 16 pares consecutivos
+  corregidos ordenando los valores de cada fila; cruces restantes: 0
+
+
+3. COBERTURA DE CADA NIVEL
+====================================================================================
+
+  Proporcion de semanas en que la demanda real quedo por debajo del nivel.
+  Si el nivel cumple lo que promete, la cobertura se parece al propio nivel.
+  Un desvio negativo significa que el modelo se queda corto.
+
+ nivel  cobertura  desvio  media_unidades
+  0.50      0.517   0.017          92.622
+  0.57      0.581   0.011          95.055
+  0.59      0.612   0.023          95.998
+  0.64      0.669   0.029          97.827
+  0.65      0.679   0.029          98.152
+  0.66      0.683   0.023          98.347
+  0.67      0.692   0.022          98.702
+  0.68      0.700   0.020          99.063
+  0.72      0.727   0.007         100.348
+  0.74      0.735  -0.005         101.089
+  0.78      0.748  -0.032         102.276
+  0.79      0.752  -0.038         102.752
+  0.80      0.771  -0.029         103.140
+  0.81      0.777  -0.033         103.631
+  0.90      0.875  -0.025         109.392
+  0.98      0.960  -0.020         125.400
+  0.99      0.988  -0.002         208.546
+
+  desvio medio: -0.000
+  niveles que se quedan cortos: 8 de 17
+
+
+4. PERDIDA PINBALL POR NIVEL
+====================================================================================
+
+ nivel  pinball
+  0.50   5.6672
+  0.57   5.5403
+  0.59   5.4930
+  0.64   5.3217
+  0.65   5.2502
+  0.66   5.2038
+  0.67   5.1688
+  0.68   5.1175
+  0.72   4.8423
+  0.74   4.6585
+  0.78   4.2746
+  0.79   4.1544
+  0.80   4.0475
+  0.81   3.9409
+  0.90   2.5976
+  0.98   0.9786
+  0.99   1.2989
+
+
+5. NIVEL QUE OPERA CADA PRODUCTO
+====================================================================================
+
+id_producto          nombre  sin merma  merma parcial  con merma
+   PROD_001           Tinto       0.99           0.81       0.68
+   PROD_002  Café con Leche       0.99           0.79       0.65
+   PROD_003      Cappuccino       0.99           0.80       0.66
+   PROD_004     Pan de Bono       0.99           0.78       0.64
+   PROD_005         Buñuelo       0.99           0.80       0.67
+   PROD_006       Croissant       0.99           0.79       0.65
+   PROD_007 Pastel de Pollo       0.99           0.72       0.57
+   PROD_008 Jugo de Naranja       0.98           0.74       0.59
+
+
+6. FICHEROS GENERADOS
+====================================================================================
+
+  salidas/parametros/abanico_prueba.csv
+  salidas/figuras/16_abanico_series.png
+  salidas/figuras/17_cobertura_niveles.png

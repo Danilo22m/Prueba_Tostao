@@ -1,0 +1,32 @@
+{
+  "nivel_optimizado": 0.65,
+  "ensayos": 30,
+  "por_familia": {
+    "media movil + residuales": {},
+    "regresion cuantilica": {
+      "alpha": 0.029854447278927155
+    },
+    "boosting cuantilico": {
+      "max_depth": 3,
+      "learning_rate": 0.030743461092148143,
+      "max_iter": 500,
+      "min_samples_leaf": 10,
+      "l2_regularization": 5.47092529540421
+    },
+    "bosque cuantilico": {
+      "n_estimators": 300,
+      "min_samples_leaf": 5,
+      "max_features": 0.4163203968124951
+    },
+    "ridge + residuales": {
+      "alpha": 0.641078552055067
+    },
+    "gbr + residuales": {
+      "n_estimators": 500,
+      "max_depth": 2,
+      "learning_rate": 0.016504744032511513,
+      "min_samples_leaf": 10
+    },
+    "ensemble + residuales": {}
+  }
+}

@@ -72,14 +72,13 @@ la vez: hay que elegir un conjunto. Los modelos de árboles son indiferentes,
 porque parten de una variable cada vez, pero incluir las ocho solo diluye la
 importancia sin añadir información.
 
-## 5. La línea base es la media móvil de 3 semanas
+## 5. La línea base es la media móvil de 4 semanas
 
 Resultado sobre las semanas de prueba, que el diseño no ha tocado:
 
 | Línea base | WAPE | MAE | R² | Sesgo |
 |---|---|---|---|---|
-| Media móvil 3 | **11,87 %** | 11,07 | 0,902 | +0,55 |
-| Media móvil 4 | 11,91 % | 11,11 | 0,899 | +0,48 |
+| Media móvil 4 | **11,91 %** | 11,11 | 0,899 | +0,48 |
 | Persistencia | 13,40 % | 12,50 | 0,876 | +0,45 |
 | Media histórica | 13,99 % | 13,05 | 0,856 | +1,23 |
 | Deriva | 15,51 % | 14,47 | 0,833 | +0,50 |
@@ -90,12 +89,22 @@ serie como referencia, y no es la mejor. La media expansiva arrastra las semanas
 persistencia en prueba aunque gane en entrenamiento. La ventana corta rastrea el
 nivel sin quedarse anclada al pasado remoto.
 
-El barrido de longitudes, en la figura 10, da una curva en U con mínimo en 3 y un
-tramo plano entre 3 y 5. Por debajo entra ruido, por encima entra historia
-desfasada.
+El barrido de longitudes, en la figura 10, se evalúa **sobre las semanas de
+validación 8 a 10, no sobre las de prueba**. Elegir la ventana mirando la prueba
+sería ajustar un parámetro contra el conjunto que debe quedar intacto.
 
-**El listón queda fijado en WAPE 11,87 % y R² 0,902.** Cualquier modelo se mide
-contra ese número.
+La curva tiene forma de U con mínimo en 4 y 5, empatadas en 11,28 % sobre
+validación, y un tramo plano entre 3 y 5. Por debajo entra ruido, por encima
+entra historia desfasada.
+
+**El listón queda fijado en WAPE 11,91 % y R² 0,899**, medido sobre prueba con la
+ventana elegida en validación. Cualquier modelo se mide contra ese número.
+
+Una nota metodológica que conviene declarar: en una primera versión este barrido
+se hizo sobre las semanas de prueba y elegía una ventana de 3, con 11,87 %. Esa
+cifra estaba inflada porque el parámetro se había ajustado contra el propio
+conjunto de evaluación. Corregido el procedimiento, la ventana pasa a 4 y el
+listón sube cuatro centésimas.
 
 ## 6. La deriva es la peor línea base, y eso es un hallazgo
 
@@ -122,9 +131,9 @@ separado. Y el margen disponible es estrecho.
 
 | Referencia | WAPE en prueba |
 |---|---|
-| Media móvil 3, la línea base | 11,87 % |
-| Mejora del 5 % relativo sobre ella | 11,28 % |
-| Mejora del 10 % relativo | 10,68 % |
+| Media móvil 4, la línea base | 11,91 % |
+| Mejora del 5 % relativo sobre ella | 11,31 % |
+| Mejora del 10 % relativo | 10,72 % |
 
 Una mejora del 5 al 10 % relativo sería un buen resultado y hay que presentarlo
 como tal. Una mejora muy superior debe hacer sospechar de fuga de información
@@ -141,7 +150,7 @@ pronóstico razonable en la cantidad correcta según los costes.
 | # | Decisión | Afecta a |
 |---|---|---|
 | 1 | Partición congelada: 5-10 entrenamiento, 11-13 prueba, 14 predicción | Todo lo posterior |
-| 2 | Línea base oficial: media móvil de 3 semanas, WAPE 11,87 % | Evaluación |
+| 2 | Línea base oficial: media móvil de 4 semanas, WAPE 11,91 % | Evaluación |
 | 3 | No pasar rezagos y medias móviles juntos a un modelo lineal | Selección de variables |
 | 4 | Mantener la pendiente como variable, pero sin esperar mucho de ella | Ingeniería de variables |
 | 5 | Prueba antifuga automática en cada corrida | Calidad de código |

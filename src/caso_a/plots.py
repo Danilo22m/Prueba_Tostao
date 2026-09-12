@@ -426,3 +426,238 @@ def sensibilidad_merma(datos: pd.DataFrame, destino: Path) -> Path:
     )
     _limpiar(ax, rejilla="both")
     return _guardar(fig, destino, "12_sensibilidad_merma")
+
+
+def comparacion_familias(pivote: pd.DataFrame, destino: Path) -> Path:
+    """Perdida pinball de cada familia en cada nivel evaluado."""
+    _preparar()
+    columnas = [c for c in pivote.columns if c != "media"]
+    datos = pivote.sort_values("media")
+    fig, ax = plt.subplots(figsize=(8.6, 4.4))
+    posiciones = np.arange(len(datos))
+    ancho = 0.8 / len(columnas)
+
+    for indice, (columna, color) in enumerate(zip(columnas, (AZUL, AGUA, NARANJA, ROJO))):
+        desplazamiento = (indice - (len(columnas) - 1) / 2) * ancho
+        ax.bar(posiciones + desplazamiento, datos[columna], width=ancho * 0.9,
+               color=color, label=columna.replace("pinball ", "nivel "))
+
+    ax.set_xticks(posiciones)
+    ax.set_xticklabels(datos.index, fontsize=9)
+    ax.set_ylabel("Pérdida pinball (menor es mejor)")
+    ganadora = datos.index[0]
+    diferencia = 100 * (datos["media"].iloc[-1] / datos["media"].iloc[0] - 1)
+    ax.set_title(f"Gana «{ganadora}», con {diferencia:.1f} % de ventaja sobre la última")
+    ax.legend(ncols=len(columnas))
+    _limpiar(ax)
+    return _guardar(fig, destino, "13_comparacion_familias")
+
+
+def significacion(banda: pd.DataFrame, destino: Path) -> Path:
+    """Perdida de cada familia con su banda de confianza al 95 %."""
+    _preparar()
+    datos = banda.sort_values("pinball", ascending=False).reset_index(drop=True)
+    fig, ax = plt.subplots(figsize=(8.2, 4.0))
+    posiciones = np.arange(len(datos))
+
+    ax.hlines(posiciones, datos["inferior"], datos["superior"], color=REJILLA, linewidth=7)
+    ax.scatter(datos["pinball"], posiciones, s=90, color=AZUL, zorder=3)
+    ax.set_yticks(posiciones)
+    ax.set_yticklabels(datos["familia"], fontsize=9.5)
+    ax.set_xlabel("Pérdida pinball en el nivel de operación, con banda al 95 %")
+
+    solapan = datos["inferior"].max() <= datos["superior"].min()
+    veredicto = "se solapan: no hay ganador estadístico" if solapan else "no se solapan: hay ganador"
+    ax.set_title(f"Las bandas {veredicto}")
+    _limpiar(ax, rejilla="x")
+    return _guardar(fig, destino, "14_significacion")
+
+
+def colchon_por_serie(predicciones: dict, destino: Path, alto: float = 0.9, bajo: float = 0.5) -> Path:
+    """Distribucion del ancho del colchon que asigna cada familia.
+
+    El colchon es la distancia entre el nivel alto y el central. Si una familia
+    lo aplica plano, su nube se reduce a una linea vertical: esa familia no
+    distingue una serie estable de una volatil.
+    """
+    _preparar()
+    fig, ax = plt.subplots(figsize=(8.4, 4.4))
+    nombres = list(predicciones)
+    colores = (AZUL, AGUA, NARANJA, ROJO)
+
+    planas = []
+    for indice, (nombre, color) in enumerate(zip(nombres, colores)):
+        colchon = predicciones[nombre][alto] - predicciones[nombre][bajo]
+        dispersion = float(np.std(colchon))
+        if dispersion < 0.01:
+            planas.append(nombre)
+        ruido = np.random.default_rng(indice).normal(0, 0.06, size=len(colchon))
+        ax.scatter(colchon, np.full(len(colchon), indice) + ruido, s=9, alpha=0.32,
+                   color=color, edgecolor="none")
+        ax.scatter([float(np.mean(colchon))], [indice], s=110, color=color,
+                   edgecolor=SUPERFICIE, linewidth=2, zorder=4)
+
+    ax.axvline(0, color=ROJO, linewidth=1.2, linestyle="--")
+    ax.set_yticks(range(len(nombres)))
+    ax.set_yticklabels(nombres, fontsize=9.5)
+    ax.set_xlabel(f"Unidades entre el nivel {bajo} y el {alto}")
+    if planas:
+        mensaje = f"«{planas[0]}» aplica el mismo colchón a todas las series"
+    else:
+        mensaje = "Todas las familias gradúan el colchón por serie"
+    ax.set_title(mensaje)
+    _limpiar(ax, rejilla="x")
+    return _guardar(fig, destino, "15_colchon_por_serie")
+
+
+def abanico_series(abanico: pd.DataFrame, destino: Path, n_series: int = 4) -> Path:
+    """Abanico de niveles frente a la demanda real, en unas pocas series.
+
+    Se eligen series de volatilidad distinta para que se vea que el ancho del
+    abanico no es el mismo en todas.
+    """
+    _preparar()
+    columnas = sorted(c for c in abanico.columns if c.startswith("q0"))
+    bajo, medio, alto = columnas[0], columnas[len(columnas) // 2], columnas[-1]
+
+    variabilidad = (
+        abanico.assign(ancho=abanico[alto] - abanico[bajo])
+        .groupby(["id_tienda", "id_producto"], observed=True)["ancho"].mean()
+        .sort_values()
+    )
+    indices = np.linspace(0, len(variabilidad) - 1, n_series).astype(int)
+    elegidas = variabilidad.index[indices]
+
+    fig, ejes = plt.subplots(1, n_series, figsize=(3.1 * n_series, 3.5), sharey=False)
+    for ax, clave in zip(np.atleast_1d(ejes), elegidas):
+        sub = abanico[
+            (abanico["id_tienda"] == clave[0]) & (abanico["id_producto"] == clave[1])
+        ].sort_values("semana")
+        ax.fill_between(sub["semana"], sub[bajo], sub[alto], color=AZUL, alpha=0.18)
+        ax.plot(sub["semana"], sub[medio], color=AZUL, linewidth=2)
+        ax.plot(sub["semana"], sub["unidades_vendidas"], color=NARANJA, linewidth=2,
+                marker="o", markersize=5, markerfacecolor=SUPERFICIE, markeredgewidth=1.6)
+        ancho = float((sub[alto] - sub[bajo]).mean())
+        ax.set_title(f"{clave[1]} · {clave[0]}\nabanico medio {ancho:.0f} u", fontsize=10)
+        ax.set_xlabel("Semana")
+        ax.set_xticks(sorted(sub["semana"].unique()))
+        _limpiar(ax)
+    np.atleast_1d(ejes)[0].set_ylabel("Unidades")
+    estrecho, ancho_max = variabilidad.iloc[0], variabilidad.iloc[-1]
+    fig.suptitle(
+        f"El abanico se adapta: de {estrecho:.0f} a {ancho_max:.0f} unidades según la serie",
+        fontsize=12.5, fontweight="bold", color=TINTA,
+    )
+    fig.tight_layout(rect=(0, 0, 1, 0.88))
+    ruta = destino / "16_abanico_series.png"
+    fig.savefig(ruta, dpi=PPP, facecolor=SUPERFICIE)
+    plt.close(fig)
+    return ruta
+
+
+def cobertura_niveles(cobertura: pd.DataFrame, destino: Path) -> Path:
+    """Cobertura empirica de cada nivel frente a la que promete."""
+    _preparar()
+    fig, ax = plt.subplots(figsize=(7.4, 5.0))
+    ax.plot([0.45, 1.0], [0.45, 1.0], color=TINTA_SUAVE, linestyle="--", linewidth=1.4,
+            label="cobertura perfecta")
+    cortos = cobertura["desvio"] < 0
+    ax.scatter(cobertura.loc[~cortos, "nivel"], cobertura.loc[~cortos, "cobertura"],
+               s=80, color=AZUL, zorder=3, label="cubre lo prometido")
+    if cortos.any():
+        ax.scatter(cobertura.loc[cortos, "nivel"], cobertura.loc[cortos, "cobertura"],
+                   s=80, color=ROJO, zorder=3, label="se queda corto")
+    ax.set_xlabel("Nivel de servicio prometido")
+    ax.set_ylabel("Proporción de semanas cubiertas")
+    ax.set_xlim(0.45, 1.02)
+    ax.set_ylim(0.45, 1.02)
+    desvio = cobertura["desvio"].mean()
+    peor = cobertura["desvio"].abs().max()
+    if abs(desvio) < 0.005:
+        titulo = f"Cobertura alineada con lo prometido; desvío máximo {peor:.3f}"
+    else:
+        sentido = "por encima" if desvio > 0 else "por debajo"
+        titulo = f"Cobertura media {abs(desvio):.3f} {sentido} de lo prometido"
+    ax.set_title(titulo)
+    ax.legend(loc="upper left")
+    _limpiar(ax, rejilla="both")
+    return _guardar(fig, destino, "17_cobertura_niveles")
+
+
+def error_por_grupo(por_producto: pd.DataFrame, por_tienda: pd.DataFrame, destino: Path) -> Path:
+    """Error porcentual por producto y por tienda, uno al lado del otro."""
+    _preparar()
+    fig, (izq, der) = plt.subplots(1, 2, figsize=(11.0, 4.6))
+
+    for ax, datos, titulo in (
+        (izq, por_producto.sort_values("WAPE"), "Por producto"),
+        (der, por_tienda.sort_values("WAPE"), "Por tienda"),
+    ):
+        valores = 100 * datos["WAPE"]
+        media = valores.mean()
+        colores = [ROJO if v > media * 1.25 else AZUL for v in valores]
+        ax.barh(datos["grupo"], valores, color=colores, height=0.68)
+        ax.axvline(media, color=TINTA_SUAVE, linestyle="--", linewidth=1.2)
+        ax.set_xlabel("Error porcentual ponderado (%)")
+        ax.set_title(f"{titulo}: de {valores.min():.1f} % a {valores.max():.1f} %")
+        ax.tick_params(axis="y", labelsize=8.5)
+        _limpiar(ax, rejilla="x")
+
+    fig.tight_layout()
+    ruta = destino / "18_error_por_grupo.png"
+    fig.savefig(ruta, dpi=PPP, facecolor=SUPERFICIE)
+    plt.close(fig)
+    return ruta
+
+
+def residuales(marco: pd.DataFrame, prediccion: str, destino: Path) -> Path:
+    """Tres diagnosticos clasicos de los residuales."""
+    _preparar()
+    real = marco["unidades_vendidas"].to_numpy(float)
+    pred = marco[prediccion].to_numpy(float)
+    residual = real - pred
+
+    fig, (uno, dos, tres) = plt.subplots(1, 3, figsize=(12.0, 3.9))
+
+    limite = [min(real.min(), pred.min()), max(real.max(), pred.max())]
+    uno.scatter(pred, real, s=14, color=AZUL, alpha=0.4, edgecolor="none")
+    uno.plot(limite, limite, color=TINTA_SUAVE, linestyle="--", linewidth=1.3)
+    uno.set_xlabel("Predicho"); uno.set_ylabel("Real")
+    uno.set_title("Predicho frente a real")
+    _limpiar(uno, rejilla="both")
+
+    dos.scatter(pred, residual, s=14, color=AZUL, alpha=0.4, edgecolor="none")
+    dos.axhline(0, color=TINTA_SUAVE, linewidth=1.2)
+    correlacion = float(np.corrcoef(pred, np.abs(residual))[0, 1])
+    dos.set_xlabel("Predicho"); dos.set_ylabel("Residual")
+    dos.set_title(f"Residual frente a predicho (ρ = {correlacion:+.2f})")
+    _limpiar(dos, rejilla="both")
+
+    tres.hist(residual, bins=35, color=AZUL, edgecolor=SUPERFICIE, linewidth=0.6)
+    tres.axvline(0, color=TINTA_SUAVE, linewidth=1.2)
+    tres.axvline(residual.mean(), color=NARANJA, linewidth=2)
+    tres.set_xlabel("Residual"); tres.set_ylabel("Frecuencia")
+    tres.set_title(f"Distribución, media {residual.mean():+.2f}")
+    _limpiar(tres)
+
+    fig.tight_layout()
+    ruta = destino / "19_residuales.png"
+    fig.savefig(ruta, dpi=PPP, facecolor=SUPERFICIE)
+    plt.close(fig)
+    return ruta
+
+
+def importancia(datos: pd.DataFrame, destino: Path) -> Path:
+    """Degradacion de la perdida al barajar cada variable."""
+    _preparar()
+    orden = datos.sort_values("degradacion")
+    fig, ax = plt.subplots(figsize=(7.8, 4.8))
+    colores = [AZUL if v > 0 else GRIS for v in orden["degradacion"]]
+    ax.barh(orden["variable"], orden["degradacion"], color=colores, height=0.66,
+            xerr=orden["desviacion"], error_kw={"ecolor": REJILLA, "elinewidth": 1.2})
+    ax.axvline(0, color=TINTA_SUAVE, linewidth=1.2)
+    ax.set_xlabel("Aumento de la pérdida al barajar la variable")
+    lider = orden.iloc[-1]
+    ax.set_title(f"«{lider['variable']}» es la variable que más aporta")
+    _limpiar(ax, rejilla="x")
+    return _guardar(fig, destino, "20_importancia")

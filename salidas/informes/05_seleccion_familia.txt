@@ -1,0 +1,117 @@
+SELECCION DE FAMILIA - CASO A
+====================================================================================
+
+  entrenamiento 5-10 (6 semanas), prueba 11-13 (3 semanas), prediccion semana 14
+  filas: 960 de entrenamiento, 480 de prueba
+  niveles evaluados: [0.5, 0.65, 0.9]
+  nivel que decide la seleccion: 0.65
+
+  Las familias marcadas [puntual] solo estiman la media condicional. Se
+  convierten en distribucion con los cuantiles empiricos de sus residuales,
+  igual que la linea base, para que compitan en la misma metrica.
+
+
+1. AJUSTE DE HIPERPARAMETROS
+====================================================================================
+
+  Busqueda bayesiana, 30 ensayos por familia, optimizando la
+  perdida pinball en el nivel 0.65 sobre los pliegues de validacion.
+
+                        familia  perdida_validacion                                                                                                                         hiperparametros
+           regresion cuantilica              4.7938                                                                                                         {"alpha": 0.029854447278927155}
+       media movil + residuales              4.8408                                                                                                                             por defecto
+   ridge + residuales [puntual]              4.8730                                                                                                            {"alpha": 0.641078552055067}
+              bosque cuantilico              4.9021                                                        {"max_features": 0.4163203968124951, "min_samples_leaf": 5, "n_estimators": 300}
+ensemble + residuales [puntual]              4.9040                                                                                                                             por defecto
+     gbr + residuales [puntual]              4.9374                                    {"learning_rate": 0.016504744032511513, "max_depth": 2, "min_samples_leaf": 10, "n_estimators": 500}
+            boosting cuantilico              4.9987 {"l2_regularization": 5.47092529540421, "learning_rate": 0.030743461092148143, "max_depth": 3, "max_iter": 500, "min_samples_leaf": 10}
+
+
+2. RESULTADO EN LAS SEMANAS DE PRUEBA
+====================================================================================
+
+                                 pinball 0.5  pinball 0.65  pinball 0.9   media
+regresion cuantilica                  5.5986        5.2513       2.5473  4.4658
+ridge + residuales [puntual]          5.4941        5.2787       2.7189  4.4973
+media movil + residuales              5.5630        5.3193       2.7409  4.5411
+ensemble + residuales [puntual]       5.5839        5.3343       2.8491  4.5891
+bosque cuantilico                     5.7635        5.4125       2.6744  4.6168
+gbr + residuales [puntual]            5.7495        5.4737       2.9258  4.7163
+boosting cuantilico                   5.7520        5.4628       3.0415  4.7521
+
+  metricas del pronostico central, nivel 0.5:
+
+                                   WAPE      MAE   sesgo
+ridge + residuales [puntual]     0.1178  10.9882  0.3174
+media movil + residuales         0.1193  11.1260 -0.0167
+ensemble + residuales [puntual]  0.1197  11.1679  0.3717
+regresion cuantilica             0.1201  11.1973  0.5113
+gbr + residuales [puntual]       0.1233  11.4989  0.1010
+boosting cuantilico              0.1233  11.5040  0.1560
+bosque cuantilico                0.1236  11.5271  0.3354
+
+
+3. EL CLASICO POR SERIE
+====================================================================================
+
+ nivel  pinball   WAPE
+  0.50   5.7476 0.1232
+  0.65   5.4646    NaN
+  0.90   2.9390    NaN
+
+  Ajusta cada serie con su propia historia, sin variables construidas.
+
+
+4. SON REALES LAS DIFERENCIAS
+====================================================================================
+
+4.1 Diebold-Mariano contra «regresion cuantilica», nivel 0.65
+------------------------------------------------------------------------------------
+
+                          rival  estadistico  p_valor           conclusion
+   ridge + residuales [puntual]       0.8660   0.3865       empate tecnico
+       media movil + residuales       1.9255   0.0542       empate tecnico
+ensemble + residuales [puntual]       1.2349   0.2169       empate tecnico
+              bosque cuantilico       1.7064   0.0879       empate tecnico
+     gbr + residuales [puntual]       2.4707   0.0135 pierde con evidencia
+            boosting cuantilico       2.1501   0.0315 pierde con evidencia
+
+4.2 Banda de confianza al 95 % por remuestreo de series
+------------------------------------------------------------------------------------
+
+                        familia  pinball  inferior  superior
+           regresion cuantilica   5.2513    4.8056    5.7328
+   ridge + residuales [puntual]   5.2787    4.8242    5.7721
+       media movil + residuales   5.3193    4.8624    5.8201
+ensemble + residuales [puntual]   5.3343    4.8401    5.8766
+              bosque cuantilico   5.4125    4.9204    5.9563
+     gbr + residuales [puntual]   5.4737    4.9489    6.0538
+            boosting cuantilico   5.4628    4.9550    6.0117
+
+  Las bandas se solapan entre todas las familias.
+
+
+5. ANCHO DEL COLCHON POR SERIE
+====================================================================================
+
+  Diferencia entre el nivel 0.9 y el 0.5 de cada fila. Desviacion cero significa
+  que el modelo aplica el mismo colchon a las 160 series. Minimo negativo
+  significa que los niveles se cruzan, lo que es imposible en la realidad.
+
+                        familia  media  desviacion  minimo  maximo  se_cruza
+           regresion cuantilica  16.76        3.53   10.52   28.55     False
+   ridge + residuales [puntual]  16.42        0.00   16.42   16.42     False
+       media movil + residuales  16.53        0.00   16.53   16.53     False
+ensemble + residuales [puntual]  14.39        0.00   14.39   14.39     False
+              bosque cuantilico  16.87        6.08    5.00   45.00     False
+     gbr + residuales [puntual]  14.90        0.00   14.90   14.90     False
+            boosting cuantilico  13.62        5.92   -5.45   31.94      True
+
+
+6. FICHEROS GENERADOS
+====================================================================================
+
+  salidas/parametros/hiperparametros.json
+  salidas/figuras/13_comparacion_familias.png
+  salidas/figuras/14_significacion.png
+  salidas/figuras/15_colchon_por_serie.png
