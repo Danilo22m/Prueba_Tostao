@@ -168,6 +168,75 @@ def test_clasico_no_ve_la_prueba(prueba, particion) -> None:
     assert not np.isnan(prediccion).any(), "el suavizado dejo predicciones sin calcular"
 
 
+def _panel_base() -> pd.DataFrame:
+    """Panel semanal enriquecido, sin variables derivadas."""
+    tablas = loaders.cargar_todo(validar=True)
+    return panel.enriquecer(
+        panel.a_semanal(tablas["ventas"]), tablas["catalogo"], tablas["tiendas"]
+    )
+
+
+def test_extension_no_altera_el_pasado() -> None:
+    """Anadir la fila de la semana a entregar no puede mover ninguna variable pasada.
+
+    Es la fuga en la direccion contraria: no que el pasado mire al futuro, sino
+    que ampliar el panel por el final desplace una ventana movil sin que nadie
+    lo note.
+    """
+    features.verificar_extension(_panel_base())
+
+
+def test_la_fila_futura_no_inventa_demanda() -> None:
+    """La fila de la semana a entregar sale de datos reales, no de supuestos.
+
+    Comprueba dos cosas en todas las series a la vez: que su demanda queda
+    ausente, porque no ha ocurrido, y que sus variables coinciden exactamente
+    con lo observado en las semanas que la preceden.
+    """
+    pnl = _panel_base()
+    ultima = int(pnl["semana"].max())
+    futuro = features.construir(features.extender_al_futuro(pnl))
+    futuro = futuro[futuro["semana"] == ultima + 1].set_index(features.CLAVE_SERIE)
+
+    assert futuro[features.OBJETIVO].isna().all(), "la fila futura trae demanda inventada"
+    assert len(futuro) == len(pnl[features.CLAVE_SERIE].drop_duplicates()), "faltan series"
+
+    observado = pnl.sort_values("semana").set_index(features.CLAVE_SERIE)
+    for k in range(1, features.MAX_REZAGO + 1):
+        real = observado[observado["semana"] == ultima + 1 - k][features.OBJETIVO]
+        assert np.allclose(futuro[f"rezago_{k}"], real.reindex(futuro.index)), \
+            f"el rezago {k} de la fila futura no coincide con la semana {ultima + 1 - k}"
+
+    ventana = pnl[pnl["semana"] > ultima - features.MAX_REZAGO]
+    media = ventana.groupby(features.CLAVE_SERIE, observed=True)[features.OBJETIVO].mean()
+    assert np.allclose(futuro[f"media_{features.MAX_REZAGO}"], media.reindex(futuro.index)), \
+        "la media movil de la fila futura no coincide con las ultimas semanas observadas"
+
+
+def test_entrega_entrena_con_todo_menos_la_semana_entregada() -> None:
+    """La particion de entrega usa toda la historia y ninguna fila sin demanda.
+
+    Entrenar con la fila de la semana entregada seria absurdo, porque su
+    objetivo esta vacio, y silencioso, porque el modelo la descartaria o
+    fallaria segun la familia.
+    """
+    pnl = _panel_base()
+    entrega = splits.para_entrega(pnl)
+    ampliado = features.construir(features.extender_al_futuro(pnl, entrega.prediccion))
+    derivadas = [c for c in ampliado.columns if c not in pnl.columns]
+    utilizable = ampliado.dropna(subset=derivadas)
+
+    assert max(entrega.entrenamiento) < entrega.prediccion, "el entrenamiento llega a la semana entregada"
+    assert not entrega.prueba, "la particion de entrega no debe reservar semanas"
+
+    ajuste_entrega = splits.separar(utilizable, entrega.entrenamiento)
+    assert not ajuste_entrega[features.OBJETIVO].isna().any(), "hay filas de ajuste sin demanda"
+
+    evaluacion = splits.desde_panel(pnl)
+    assert set(evaluacion.entrenamiento) | set(evaluacion.prueba) == set(entrega.entrenamiento), \
+        "la entrega no aprovecha todas las semanas que la evaluacion tenia disponibles"
+
+
 def main() -> int:
     utilizable, entrenamiento, prueba, particion = preparar()
     pruebas = [
@@ -180,6 +249,9 @@ def main() -> int:
         ("ajuste no mira la prueba", lambda: test_ajustar_no_mira_la_prueba(entrenamiento, prueba)),
         ("control negativo: mas datos cambian el modelo", lambda: test_entrenar_con_mas_datos_cambia_el_modelo(entrenamiento, prueba, utilizable, particion)),
         ("el clasico no ve la prueba", lambda: test_clasico_no_ve_la_prueba(prueba, particion)),
+        ("ampliar el panel no altera el pasado", test_extension_no_altera_el_pasado),
+        ("la fila futura no inventa demanda", test_la_fila_futura_no_inventa_demanda),
+        ("la entrega entrena con todo menos la semana entregada", test_entrega_entrena_con_todo_menos_la_semana_entregada),
     ]
 
     fallos = 0

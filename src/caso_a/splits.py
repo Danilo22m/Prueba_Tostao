@@ -48,12 +48,15 @@ class Particion:
     prediccion: int
 
     def __str__(self) -> str:
-        return (
+        parte = (
             f"entrenamiento {self.entrenamiento[0]}-{self.entrenamiento[-1]} "
-            f"({len(self.entrenamiento)} semanas), "
-            f"prueba {self.prueba[0]}-{self.prueba[-1]} ({len(self.prueba)} semanas), "
-            f"prediccion semana {self.prediccion}"
+            f"({len(self.entrenamiento)} semanas)"
         )
+        if self.prueba:
+            parte += f", prueba {self.prueba[0]}-{self.prueba[-1]} ({len(self.prueba)} semanas)"
+        else:
+            parte += ", sin semanas de prueba"
+        return f"{parte}, prediccion semana {self.prediccion}"
 
 
 def construir(
@@ -96,12 +99,35 @@ def desde_panel(
     Comprueba ademas que el calendario de semanas sea continuo, porque un hueco
     haria que los rezagos cruzaran periodos sin que nadie se entere.
     """
-    semanas = sorted(panel["semana"].unique())
-    esperadas = list(range(int(semanas[0]), int(semanas[-1]) + 1))
+    return construir(_ultima_semana(panel), historia_minima, semanas_prueba)
+
+
+def _ultima_semana(panel: pd.DataFrame) -> int:
+    """Ultima semana del panel, tras comprobar que el calendario no tiene huecos.
+
+    Un hueco haria que los rezagos cruzaran periodos sin que nadie se entere.
+    """
+    semanas = sorted(int(s) for s in panel["semana"].unique())
+    esperadas = list(range(semanas[0], semanas[-1] + 1))
     if semanas != esperadas:
         faltan = sorted(set(esperadas) - set(semanas))
         raise ValueError(f"El calendario de semanas tiene huecos: faltan {faltan}.")
-    return construir(int(semanas[-1]), historia_minima, semanas_prueba)
+    return semanas[-1]
+
+
+def para_entrega(panel: pd.DataFrame, historia_minima: int = HISTORIA_MINIMA) -> Particion:
+    """Particion de la entrega final: se entrena con todas las semanas observadas.
+
+    La evaluacion ya ocurrio con la particion de :func:`desde_panel`, y su
+    veredicto no cambia. Para el pedido que la tienda ejecuta no se reserva
+    nada: cada semana retenida seria una semana de historia desperdiciada, y no
+    queda nada que medir con ella.
+
+    La particion resultante no tiene semanas de prueba. Cualquier metrica
+    calculada sobre ella estaria medida en los mismos datos del ajuste, asi que
+    el codigo que la usa no debe calcular ninguna.
+    """
+    return construir(_ultima_semana(panel), historia_minima, semanas_prueba=0)
 
 
 def pliegues_expansivos(

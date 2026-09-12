@@ -118,3 +118,74 @@ def columnas_predictoras(marco: pd.DataFrame) -> list[str]:
         "costo_unitario", "precio_venta", "costo_almacenamiento_semanal", "ciudad",
     }
     return [c for c in marco.columns if c not in excluidas]
+
+
+def extender_al_futuro(panel: pd.DataFrame, semana: int | None = None) -> pd.DataFrame:
+    """Anade al panel una fila por serie para la semana que se va a predecir.
+
+    Para pedir la semana siguiente hace falta una fila con sus variables, y esa
+    fila no existe en el panel: la semana todavia no ha ocurrido. Se crea aqui
+    heredando los atributos fijos de tienda y producto de la ultima semana
+    observada, que son constantes en el tiempo, y dejando la demanda ausente.
+
+    Al pasar el resultado por :func:`construir`, la fila nueva recibe sus
+    rezagos y medias moviles de las semanas reales que la preceden, con la misma
+    regla que el resto del panel. No se inventa ningun dato de demanda.
+
+    Args:
+        panel: Panel semanal enriquecido, con todas las semanas observadas.
+        semana: Semana a anadir. Solo se admite la inmediatamente siguiente a la
+            ultima observada; el argumento existe para que quien llama declare
+            que semana cree que esta pidiendo. ``None`` la deduce.
+
+    Raises:
+        ValueError: Si la semana pedida no es la siguiente a la ultima
+            observada. Saltarse una semana dejaria los rezagos desplazados.
+    """
+    ultima = int(panel["semana"].max())
+    destino = ultima + 1 if semana is None else int(semana)
+    if destino != ultima + 1:
+        raise ValueError(
+            f"Solo se puede extender a la semana {ultima + 1}, que es la siguiente a "
+            f"la ultima observada, y se ha pedido la {destino}. Con un salto, los "
+            f"rezagos apuntarian a semanas equivocadas."
+        )
+
+    futura = panel[panel["semana"] == ultima].copy()
+    futura["semana"] = destino
+    futura[OBJETIVO] = np.nan
+    ampliado = pd.concat([panel, futura], ignore_index=True)
+    return ampliado.sort_values(CLAVE_SERIE + ["semana"], ignore_index=True)
+
+
+def verificar_extension(panel: pd.DataFrame, max_rezago: int = MAX_REZAGO) -> None:
+    """Comprueba que anadir la fila futura no altera ninguna variable del pasado.
+
+    Es el mismo argumento que :func:`verificar_sin_fuga`, en la otra direccion:
+    alli se comprueba que las variables no miran hacia adelante, aqui que
+    ampliar el panel por el final no cambia nada de lo que ya estaba calculado.
+    Si una ventana estuviera mal centrada, los valores se moverian.
+
+    Raises:
+        AssertionError: Si alguna columna difiere en las semanas observadas.
+    """
+    ultima = int(panel["semana"].max())
+    sin_futuro = construir(panel, max_rezago)
+    con_futuro = construir(extender_al_futuro(panel), max_rezago)
+
+    columnas = [c for c in sin_futuro.columns if c not in panel.columns]
+    orden = CLAVE_SERIE + ["semana"]
+    izq = sin_futuro.sort_values(orden)
+    der = con_futuro[con_futuro["semana"] <= ultima].sort_values(orden)
+
+    if len(izq) != len(der):
+        raise AssertionError(
+            f"La extension cambio el numero de filas observadas: {len(izq)} frente a {len(der)}."
+        )
+    for columna in columnas:
+        a = izq[columna].to_numpy(dtype=float)
+        b = der[columna].to_numpy(dtype=float)
+        if not np.allclose(a, b, equal_nan=True):
+            raise AssertionError(
+                f"Anadir la semana futura altero la variable {columna!r} del pasado."
+            )

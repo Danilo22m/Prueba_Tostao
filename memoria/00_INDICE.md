@@ -22,12 +22,18 @@ está escrito a mano y se actualiza cuando cambian las conclusiones.
 | 13 | Calibración conformal | `run_calibracion.py` | `08_calibracion.txt` | `08` |
 | 14 | Optimizador del pedido | `run_pedidos.py` | `09_pedidos.txt` | `09` |
 | 15 | Simulación de políticas y ahorro | `run_politicas.py` | `10_politicas.txt` | `10` |
-| 16 | Tabla de pedidos de la semana siguiente | pendiente | — | — |
+| 16 | Entrega: pedido de la semana siguiente | `run_entrega.py` | `11_entrega.txt` | `11` |
 | 17 | Presentación ejecutiva | pendiente | — | — |
 
-**Orden de ejecución.** Los scripts son independientes salvo que `run_modelos.py`
-escribe los hiperparámetros que consumen los cuatro siguientes. El orden seguro
-es el de la tabla.
+**Orden de ejecución.** `main.py` ejecuta los once pasos en este orden y se
+detiene en el primero que falle. Los scripts también se pueden lanzar sueltos:
+son independientes salvo que `run_modelos.py` escribe los hiperparámetros que
+consumen los cinco siguientes.
+
+**Los pasos 1 a 15 miden; el 16 entrega.** Los primeros quince trabajan con las
+semanas 11 a 13 retenidas, para que las métricas signifiquen algo. El paso 16
+reentrena con las trece semanas completas y produce el pedido de la semana 14,
+que no tiene demanda con la que compararse y por tanto no lleva métricas.
 
 ## Documentos transversales
 
@@ -42,8 +48,8 @@ No corresponden a un paso: recogen decisiones que atraviesan varios.
 
 | Carpeta | Contenido | ¿Se regenera? |
 |---|---|---|
-| `salidas/informes/` | Diez informes en texto, solo hechos | Sí, en cada ejecución |
-| `salidas/figuras/` | Veinticuatro gráficos | Sí |
+| `salidas/informes/` | Once informes en texto, solo hechos | Sí, en cada ejecución |
+| `salidas/figuras/` | Veinticinco gráficos | Sí |
 | `salidas/parametros/` | Política de costes, rejilla, hiperparámetros, abanico, pedidos, ajustes | Sí |
 | `memoria/` | Interpretación escrita a mano | No |
 
@@ -51,7 +57,7 @@ No corresponden a un paso: recogen decisiones que atraviesan varios.
 
 | Fichero | Qué comprueba |
 |---|---|
-| `tests/test_fuga.py` | Nueve verificaciones de aislamiento entre entrenamiento, validación y prueba |
+| `tests/test_fuga.py` | Doce verificaciones de aislamiento temporal: nueve entre entrenamiento, validación y prueba, y tres sobre la fila de la semana que se entrega |
 | `tests/test_optimizador.py` | Ocho pruebas del optimizador con casos de respuesta conocida |
 
 ## Cómo reproducirlo entero
@@ -59,14 +65,21 @@ No corresponden a un paso: recogen decisiones que atraviesan varios.
 ```bash
 python -m venv .venv
 ./.venv/bin/pip install -r requirements.txt
-
-for s in run_audit run_eda run_features run_costes run_modelos \
-         run_rejilla run_diagnostico run_calibracion run_pedidos run_politicas; do
-    ./.venv/bin/python $s.py
-done
-
-./.venv/bin/python tests/test_fuga.py
-./.venv/bin/python tests/test_optimizador.py
+./.venv/bin/python main.py
 ```
 
-Dos ejecuciones seguidas producen informes idénticos byte a byte.
+Eso ejecuta los once pasos en orden y, al terminar, las dos baterías de
+verificación. Dos ejecuciones seguidas producen informes idénticos byte a byte.
+
+Para iterar sobre un paso sin repetir los anteriores:
+
+```bash
+./.venv/bin/python main.py --listar          # ver los pasos y sus claves
+./.venv/bin/python main.py --solo entrega    # un único paso
+./.venv/bin/python main.py --desde rejilla   # desde ese paso hasta el final
+./.venv/bin/python main.py --sin-pruebas     # omitir las verificaciones
+```
+
+Cada paso declara qué artefactos necesita de los anteriores. Si faltan, el
+proceso se detiene con un mensaje que dice cuál y quién lo produce, en lugar de
+fallar a mitad de una ejecución larga.

@@ -782,3 +782,35 @@ def calibracion(comparacion: pd.DataFrame, destino: Path) -> Path:
     ax.legend(loc="upper left")
     _limpiar(ax, rejilla="both")
     return _guardar(fig, destino, "21_calibracion")
+
+
+def pedido_por_tienda(pedidos: pd.DataFrame, destino: Path) -> Path:
+    """Unidades a pedir en cada tienda, separando lo que ya cubre el inventario."""
+    _preparar()
+    datos = (
+        pedidos.groupby("id_tienda", observed=True)
+        .agg(pedido=("pedido", "sum"), stock=("stock_actual", "sum"))
+        .reset_index()
+        .sort_values("pedido")
+    )
+    fig, ax = plt.subplots(figsize=(8.4, 5.6))
+    posiciones = np.arange(len(datos))
+
+    # Lo que se pide va anclado al cero para que las barras se comparen entre
+    # si; el stock se apila despues, como contexto.
+    ax.barh(posiciones, datos["pedido"], color=AZUL, height=0.64, label="a pedir")
+    ax.barh(posiciones, datos["stock"], left=datos["pedido"], color=GRIS, height=0.64,
+            label="ya en estantería", edgecolor=SUPERFICIE, linewidth=2)
+
+    ax.set_yticks(posiciones)
+    ax.set_yticklabels(datos["id_tienda"], fontsize=8.8)
+    ax.set_xlabel("Unidades")
+    ax.set_xlim(0, (datos["stock"] + datos["pedido"]).max() * 1.06)
+    mayor, menor = datos.iloc[-1], datos.iloc[0]
+    ax.set_title(
+        f"El pedido va de {int(menor.pedido)} unidades en {menor.id_tienda} a "
+        f"{int(mayor.pedido)} en {mayor.id_tienda}"
+    )
+    ax.legend(loc="lower right")
+    _limpiar(ax, rejilla="x")
+    return _guardar(fig, destino, "25_pedido_por_tienda")

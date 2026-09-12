@@ -1,0 +1,174 @@
+ENTREGA: PEDIDO DE LA SEMANA SIGUIENTE - CASO A
+====================================================================================
+
+  semana entregada: 14 (sin demanda observada)
+  entrenamiento: semanas 5-13 (9 semanas)
+  familia: regresion cuantilica (relativo)
+  escenario de coste: con merma (se descarta el 100% del sobrante)
+  redondeo: al entero cercano, multiplo de lote 1
+
+  Este paso no calcula error de prediccion. La semana entregada no tiene
+  demanda con la que compararse; las metricas estan en los informes 05 a 10.
+
+
+1. VERIFICACIONES DE LA ENTREGA
+====================================================================================
+
+  OK    ampliar el panel no altera ninguna variable de las semanas pasadas
+  OK    la semana entregada no aparece en el entrenamiento
+  OK    hay una fila por serie del panel, sin duplicados
+  OK    todas las series del panel reciben pedido
+  OK    la tabla entregada no contiene demanda observada
+  OK    el entrenamiento usa todas las semanas con variables completas
+  OK    ningun pedido negativo
+  OK    todas las cantidades son enteras
+  OK    el pedido mas el stock alcanza siempre el objetivo
+  OK    donde el stock cubre el objetivo, el pedido es cero
+  OK    cada producto usa el nivel de servicio que marcan sus costes
+  OK    ningun objetivo queda por debajo del pronostico central
+
+
+2. QUE CAMBIA AL ENTRENAR CON TODAS LAS SEMANAS
+====================================================================================
+
+ particion  semanas_entrenamiento  primera  ultima  filas_ajuste  pliegues_calibracion  semanas_retenidas
+evaluacion                      6        5      10           960                     3                  3
+   entrega                      9        5      13          1440                     6                  0
+
+  La particion de evaluacion reserva semanas para medir. La de entrega no
+  reserva ninguna, porque ya no queda nada que medir con ellas.
+
+  Correccion conformal recalculada con la historia completa:
+
+ nivel  desplaz_evaluacion  cobertura_fuera_pliegue  desplaz_entrega  diferencia
+  0.50              -0.273                    0.508           -0.239       0.034
+  0.57              -0.384                    0.596           -0.526      -0.142
+  0.59              -0.589                    0.616           -0.786      -0.198
+  0.64              -0.561                    0.667           -0.653      -0.092
+  0.65              -0.442                    0.671           -0.661      -0.219
+  0.66              -0.834                    0.679           -0.843      -0.009
+  0.67              -0.691                    0.686           -0.898      -0.207
+  0.68              -0.330                    0.693           -0.634      -0.304
+  0.72              -0.399                    0.726           -0.270       0.129
+  0.74              -0.657                    0.742           -0.182       0.474
+  0.78              -0.416                    0.778            0.101       0.517
+  0.79              -0.326                    0.785            0.183       0.509
+  0.80              -0.154                    0.795            0.258       0.412
+  0.81              -0.089                    0.803            0.285       0.374
+  0.90              -1.473                    0.905           -0.550       0.924
+  0.98              -0.441                    0.988           -1.717      -1.277
+  0.99              -1.964                    0.992           -2.735      -0.772
+
+  observaciones fuera de pliegue: 480 en evaluacion, 960 en entrega
+
+
+3. PEDIDO POR PRODUCTO
+====================================================================================
+
+id_producto          nombre  nivel  pronostico  objetivo  colchon  stock  pedido_medio  pedido_total  tiendas_sin_pedido
+   PROD_001           Tinto   0.68       58.83     62.55     3.72  21.70         42.15         843.0                   1
+   PROD_005         Buñuelo   0.67      126.14    133.05     6.91  19.65        113.40        2268.0                   0
+   PROD_003      Cappuccino   0.66       81.88     86.35     4.47  21.75         64.60        1292.0                   0
+   PROD_002  Café con Leche   0.65       80.48     85.40     4.92  17.55         68.25        1365.0                   1
+   PROD_006       Croissant   0.65      113.18    119.55     6.37  22.65         96.90        1938.0                   0
+   PROD_004     Pan de Bono   0.64       49.37     51.65     2.28  24.30         28.95         579.0                   3
+   PROD_008 Jugo de Naranja   0.59      111.13    115.10     3.97  23.10         92.00        1840.0                   0
+   PROD_007 Pastel de Pollo   0.57      122.54    125.90     3.36  17.65        108.25        2165.0                   0
+
+  El colchon es la diferencia entre lo que se pide tener y lo que se espera
+  vender. Crece con el nivel de servicio, que a su vez crece con el margen.
+
+
+4. PEDIDO POR TIENDA
+====================================================================================
+
+id_tienda  objetivo  stock  pedido  series_sin_pedido
+ STORE_16    1208.0    170  1038.0                  0
+ STORE_08    1167.0    280   887.0                  0
+ STORE_03     942.0    103   839.0                  0
+ STORE_04     913.0    161   752.0                  0
+ STORE_05     877.0    129   748.0                  0
+ STORE_19     819.0    105   714.0                  0
+ STORE_12     901.0    208   693.0                  0
+ STORE_14     829.0    141   688.0                  0
+ STORE_20     838.0    185   653.0                  1
+ STORE_18     808.0    157   651.0                  0
+ STORE_11     819.0    177   642.0                  0
+ STORE_02     803.0    170   633.0                  0
+ STORE_06     766.0    141   625.0                  0
+ STORE_13     663.0    136   527.0                  0
+ STORE_15     756.0    248   508.0                  0
+ STORE_01     545.0     92   453.0                  0
+ STORE_10     657.0    210   447.0                  0
+ STORE_09     516.0    219   331.0                  2
+ STORE_17     410.0    168   249.0                  1
+ STORE_07     354.0    167   212.0                  1
+
+
+5. RESUMEN DE LA OPERACION
+====================================================================================
+
+  series en la tabla              160
+  unidades totales a pedir        12,290
+  objetivo total en estanteria    15,591
+  stock que ya esta               3,367
+  series cubiertas por el stock   5
+  pedido medio por serie          76.8
+  pedido maximo                   231
+
+
+6. COHERENCIA CON EL PATRON DECLARADO DE CADA SERIE
+====================================================================================
+
+trend_type  series  mediana  media
+        up      27     0.18   0.35
+  seasonal      57    -0.35   0.11
+    random      32    -0.37  -0.07
+      down      44    -0.86  -0.23
+
+  Variacion del pronostico de la semana entregada frente a la media de las
+  cuatro ultimas semanas observadas, por patron declarado en el fichero de
+  tendencias. El patron no entra al modelo: sirve solo como contraste externo.
+
+
+7. MUESTRA DE LA TABLA ENTREGADA
+====================================================================================
+
+  tienda        producto pronostico nivel objetivo stock pedido
+STORE_01           Tinto       44.4  0.68       47     1     46
+STORE_01  Café con Leche       63.8  0.65       68    10     58
+STORE_01      Cappuccino       61.8  0.66       65    33     32
+STORE_01     Pan de Bono       47.8  0.64       50    11     39
+STORE_01         Buñuelo       76.1  0.67       80     3     77
+STORE_01       Croissant       83.6  0.65       88    13     75
+STORE_01 Pastel de Pollo       75.2  0.57       77     8     69
+STORE_01 Jugo de Naranja       67.2  0.59       70    13     57
+STORE_08           Tinto       85.9  0.68       91    45     46
+STORE_08  Café con Leche      106.1  0.65      112     1    111
+STORE_08      Cappuccino      125.1  0.66      132     0    132
+STORE_08     Pan de Bono       63.7  0.64       67    62      5
+STORE_08         Buñuelo      193.3  0.67      203    52    151
+STORE_08       Croissant      152.7  0.65      161    51    110
+STORE_08 Pastel de Pollo      250.1  0.57      257    56    201
+STORE_08 Jugo de Naranja      138.7  0.59      144    13    131
+
+  Se muestran 2 tiendas. La tabla completa esta en el CSV.
+
+
+8. SENSIBILIDAD AL ESCENARIO DE COSTE
+====================================================================================
+
+    escenario merma_supuesta  nivel_medio  objetivo_total  unidades_a_pedir  series_sin_pedido
+    sin merma             0%        0.989           20000             16671                  3
+merma parcial            50%        0.779           16559             13248                  4
+    con merma           100%        0.639           15591             12290                  5
+
+  La eleccion del escenario es una decision de negocio, no del modelo. Las
+  tres columnas de pedido salen del mismo abanico de cuantiles.
+
+
+9. FICHEROS GENERADOS
+====================================================================================
+
+  salidas/parametros/pedidos_semana_siguiente.csv
+  salidas/figuras/25_pedido_por_tienda.png
