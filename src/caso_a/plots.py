@@ -344,15 +344,23 @@ def barrido_ventana(tabla: pd.DataFrame, destino: Path) -> Path:
     y = 100 * tabla["WAPE"].to_numpy()
     ax.plot(x, y, color=AZUL, linewidth=2, marker="o", markersize=7,
             markerfacecolor=SUPERFICIE, markeredgewidth=2)
-    mejor = int(tabla.loc[tabla["WAPE"].idxmin(), "ventana"])
+    # Dos ventanas que difieren en menos de una centesima de punto son un
+    # empate: se marcan las dos y se elige la mas corta, que gasta menos historia.
     valor = 100 * tabla["WAPE"].min()
-    ax.scatter([mejor], [valor], s=150, color=NARANJA, zorder=5)
-    ax.annotate(f"óptimo: {mejor} semanas\n{valor:.2f} %", xy=(mejor, valor),
-                xytext=(mejor + 1.1, valor + 0.28), fontsize=9.5, color=TINTA,
+    empatadas = sorted(int(v) for v in tabla.loc[100 * tabla["WAPE"] - valor < 0.01, "ventana"])
+    mejor = empatadas[0]
+    ax.scatter(empatadas, [100 * tabla.set_index("ventana").loc[v, "WAPE"] for v in empatadas],
+               s=150, color=NARANJA, zorder=5)
+    etiqueta = (f"óptimo: {mejor} semanas" if len(empatadas) == 1
+                else f"empate: {' y '.join(map(str, empatadas))} semanas")
+    ax.annotate(f"{etiqueta}\n{valor:.2f} %", xy=(empatadas[-1], valor),
+                xytext=(empatadas[-1] + 1.1, valor + 0.28), fontsize=9.5, color=TINTA,
                 arrowprops={"arrowstyle": "->", "color": TINTA_SUAVE, "linewidth": 1})
     ax.set_xlabel("Semanas promediadas")
-    ax.set_ylabel("WAPE en prueba (%)")
-    ax.set_title(f"Promediar {mejor} semanas es el punto justo")
+    ax.set_ylabel("WAPE en validación (%)")
+    titulo = (f"Promediar {mejor} semanas es el punto justo" if len(empatadas) == 1
+              else f"Promediar {' o '.join(map(str, empatadas))} semanas da lo mismo: se toma {mejor}")
+    ax.set_title(titulo)
     _limpiar(ax)
     return _guardar(fig, destino, "10_barrido_ventana")
 
@@ -379,8 +387,11 @@ def niveles_por_escenario(tablas: dict[str, pd.DataFrame], destino: Path) -> Pat
     ax.set_xlim(0, 1.06)
     dispersion = {n: t["nivel"].max() - t["nivel"].min() for n, t in tablas.items()}
     mas_disperso = max(dispersion, key=dispersion.get)
-    ax.set_title(f"Los niveles solo se diferencian con el supuesto «{mas_disperso}»")
-    ax.legend(loc="lower right")
+    ax.set_title(f"Los niveles solo se diferencian con el supuesto «{mas_disperso}»", pad=26)
+    # Las barras llegan hasta el borde derecho, asi que la leyenda va fuera del
+    # area de dibujo, en una fila bajo el titulo, para no tapar ningun producto.
+    ax.legend(loc="lower left", bbox_to_anchor=(0, 1.0), ncol=len(tablas),
+              frameon=False, handlelength=1.4, columnspacing=1.6)
     _limpiar(ax, rejilla="x")
     return _guardar(fig, destino, "11_niveles_por_escenario")
 
