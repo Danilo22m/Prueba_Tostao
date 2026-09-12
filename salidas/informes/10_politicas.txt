@@ -1,0 +1,112 @@
+SIMULACION DE POLITICAS - CASO A
+====================================================================================
+
+  escenario de coste: con merma
+  decisiones simuladas: 480 (160 series x 3 semanas)
+  semanas: [11, 12, 13]
+
+  Demanda real, decision hipotetica. Se compara el nivel disponible y no la
+  cantidad pedida, porque el stock inicial es comun a todas las politicas.
+
+
+1. COSTE DE CADA POLITICA
+====================================================================================
+
+                       politica  coste_total  ventas_perdidas       merma  u_faltantes  u_sobrantes  tasa_quiebre  servicio_real
+      P4 modelo, pedir el nivel  9062060.783      3974024.827 5088035.956     1747.132     3905.394         0.338          0.961
+ P3 media movil, pedir el nivel  9255832.788      4042292.750 5213540.038     1789.742     4009.642         0.321          0.960
+     P2 modelo, pedir el centro  9512698.915      6106946.479 3405752.435     2723.254     2539.261         0.498          0.939
+P1 media movil, pedir el centro  9561517.500      5958025.000 3603492.500     2666.250     2674.250         0.471          0.940
+  P0 repetir la semana anterior 11022905.000      7085000.000 3937905.000     3107.000     2892.000         0.488          0.931
+
+  Importes en pesos colombianos. servicio_real es la proporcion de unidades
+  demandadas que se pudo servir.
+
+
+2. QUE CAMBIA LA POLITICA, EN UNIDADES
+====================================================================================
+
+  La politica no reduce el error: lo desplaza de un lado al otro. Compensa
+  porque quedarse corto y pasarse no cuestan lo mismo.
+
+                       politica  u_faltantes  u_sobrantes
+P1 media movil, pedir el centro       2666.0       2674.0
+      P4 modelo, pedir el nivel       1747.0       3905.0
+                         cambio       -919.0       1231.0
+
+  Detalle de una serie, semana a semana:
+  Tinto en STORE_08, demanda media 84 unidades
+
+                                   coste                   disponible            
+semana                                11       12       13         11    12    13
+politica                                                                         
+P0 repetir la semana anterior     8910.0  10200.0   6800.0       90.0  79.0  85.0
+P1 media movil, pedir el centro   4860.0   5100.0   9775.0       85.0  82.0  83.0
+P2 modelo, pedir el centro        4923.0   7076.0  10543.0       85.0  81.0  83.0
+P3 media movil, pedir el nivel    9518.0   2228.0      0.0       91.0  88.0  89.0
+P4 modelo, pedir el nivel        10329.0   1815.0    280.0       92.0  87.0  89.0
+
+  coste total de esa serie en las tres semanas:
+    P3 media movil, pedir el nivel           11,745
+    P4 modelo, pedir el nivel                12,424
+    P1 media movil, pedir el centro          19,735
+    P2 modelo, pedir el centro               22,543
+    P0 repetir la semana anterior            25,910
+
+
+3. DE DONDE VIENE EL AHORRO
+====================================================================================
+
+        componente   ahorro                                                   explicacion  pct_del_total
+ efecto del modelo  48818.6       predecir mejor, manteniendo la regla de pedir el centro            9.8
+efecto de la regla 305684.7 pedir el nivel de servicio, manteniendo el pronostico ingenuo           61.2
+       interaccion 144953.4                lo que aporta combinarlos, mas alla de la suma           29.0
+             TOTAL 499456.7                  del punto de partida a la propuesta completa          100.0
+
+  El diseno es factorial: se cambia el pronostico manteniendo la regla, y
+  la regla manteniendo el pronostico. La interaccion es lo que aporta
+  combinarlos mas alla de la suma de sus efectos por separado.
+
+
+4. ES SIGNIFICATIVO EL AHORRO
+====================================================================================
+
+                                                            comparacion    ahorro  inferior  superior significativo
+     P4 modelo, pedir el nivel frente a P1 media movil, pedir el centro  499456.7   87469.5  963945.3            si
+      P4 modelo, pedir el nivel frente a P3 media movil, pedir el nivel  193772.0  -17436.6  422047.5            no
+P3 media movil, pedir el nivel frente a P1 media movil, pedir el centro  305684.7  -37445.6  681406.8            no
+       P4 modelo, pedir el nivel frente a P0 repetir la semana anterior 1960844.2 1325912.8 2598959.5            si
+
+  Banda al 95 % remuestreando series completas. Si el limite inferior es
+  positivo, el ahorro no se explica por azar.
+
+
+5. SENSIBILIDAD AL ESCENARIO DE COSTE
+====================================================================================
+
+    escenario  P0_repetir  P1_centro  P3_mm_nivel  P4_propuesta  ahorro_vs_P1  pct_vs_P1  pct_vs_P0
+    sin merma   7158705.0  6025517.5     521642.9      448551.2     5576966.3       92.6       93.7
+merma parcial   9090805.0  7793517.5    6364235.2     6051554.0     1741963.5       22.4       33.4
+    con merma  11022905.0  9561517.5    9255832.8     9062060.8      499456.7        5.2       17.8
+
+  Se muestran las cuatro politicas en los tres escenarios para que cualquier
+  cifra citada fuera del informe pueda localizarse aqui. pct_vs_P0 compara
+  contra repetir la semana anterior; pct_vs_P1, contra pedir el centro.
+
+
+6. EXTRAPOLACION ANUAL
+====================================================================================
+
+  ahorro medido en 3 semanas             499,457
+  ahorro por semana                         166,486
+  extrapolado a 52 semanas                8,657,250
+
+  Es una extrapolacion lineal desde tres semanas. Sirve para dar orden de
+  magnitud, no como compromiso. La cifra real la fija un piloto.
+
+
+7. GRAFICOS GENERADOS
+====================================================================================
+
+  salidas/figuras/23_coste_politicas.png
+  salidas/figuras/24_atribucion.png

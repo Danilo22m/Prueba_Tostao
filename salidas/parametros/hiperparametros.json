@@ -27,6 +27,31 @@
       "learning_rate": 0.016504744032511513,
       "min_samples_leaf": 10
     },
-    "ensemble + residuales": {}
+    "ensemble + residuales": {},
+    "regresion cuantilica (relativo)": {
+      "alpha": 0.010323260351976565
+    },
+    "boosting cuantilico (relativo)": {
+      "max_depth": 2,
+      "learning_rate": 0.013119141481877934,
+      "max_iter": 300,
+      "min_samples_leaf": 20,
+      "l2_regularization": 8.993350475012019
+    },
+    "bosque cuantilico (relativo)": {
+      "n_estimators": 100,
+      "min_samples_leaf": 35,
+      "max_features": 0.30913426154511237
+    },
+    "ridge + residuales (relativo)": {
+      "alpha": 97.5877445022131
+    },
+    "gbr + residuales (relativo)": {
+      "n_estimators": 100,
+      "max_depth": 2,
+      "learning_rate": 0.017372389742340982,
+      "min_samples_leaf": 20
+    },
+    "ensemble + residuales (relativo)": {}
   }
 }

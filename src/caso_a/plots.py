@@ -658,6 +658,127 @@ def importancia(datos: pd.DataFrame, destino: Path) -> Path:
     ax.axvline(0, color=TINTA_SUAVE, linewidth=1.2)
     ax.set_xlabel("Aumento de la pérdida al barajar la variable")
     lider = orden.iloc[-1]
-    ax.set_title(f"«{lider['variable']}» es la variable que más aporta")
+    utiles = int((orden["degradacion"] > 0.001).sum())
+    ax.set_title(f"«{lider['variable']}» lidera; {utiles} de {len(orden)} variables aportan algo")
     _limpiar(ax, rejilla="x")
     return _guardar(fig, destino, "20_importancia")
+
+
+def composicion_pedido(por_producto: pd.DataFrame, destino: Path) -> Path:
+    """Pronostico y colchon de cada producto, apilados."""
+    _preparar()
+    datos = por_producto.sort_values("nivel")
+    fig, ax = plt.subplots(figsize=(8.4, 4.8))
+    posiciones = np.arange(len(datos))
+
+    ax.barh(posiciones, datos["pronostico"], color=AZUL, height=0.62, label="pronóstico")
+    ax.barh(posiciones, datos["colchon"], left=datos["pronostico"], color=NARANJA,
+            height=0.62, label="colchón", edgecolor=SUPERFICIE, linewidth=2)
+
+    for indice, fila in enumerate(datos.itertuples()):
+        ax.text(fila.objetivo + 1.5, indice,
+                f"nivel {fila.nivel:.2f}   +{fila.colchon:.1f} u",
+                va="center", fontsize=8.8, color=TINTA_SUAVE)
+
+    ax.set_yticks(posiciones)
+    ax.set_yticklabels(datos["nombre"], fontsize=9.5)
+    ax.set_xlabel("Unidades medias por tienda y semana")
+    ax.set_xlim(0, datos["objetivo"].max() * 1.32)
+    menor, mayor = datos.iloc[0], datos.iloc[-1]
+    ax.set_title(
+        f"El colchón sigue al margen: {mayor.colchon:.1f} u en {mayor.nombre}, "
+        f"{menor.colchon:.1f} u en {menor.nombre}"
+    )
+    ax.legend(loc="lower right")
+    _limpiar(ax, rejilla="x")
+    return _guardar(fig, destino, "22_composicion_pedido")
+
+
+def coste_politicas(tabla: pd.DataFrame, destino: Path) -> Path:
+    """Coste de cada politica, separado en ventas perdidas y merma."""
+    _preparar()
+    datos = tabla.sort_values("coste_total", ascending=False)
+    fig, ax = plt.subplots(figsize=(9.2, 4.6))
+    posiciones = np.arange(len(datos))
+
+    ax.barh(posiciones, datos["ventas_perdidas"], color=ROJO, height=0.62,
+            label="ventas perdidas")
+    ax.barh(posiciones, datos["merma"], left=datos["ventas_perdidas"], color=NARANJA,
+            height=0.62, label="merma", edgecolor=SUPERFICIE, linewidth=2)
+
+    for indice, fila in enumerate(datos.itertuples()):
+        ax.text(fila.coste_total * 1.01, indice, f"{fila.coste_total / 1e6:.2f} M",
+                va="center", fontsize=9, color=TINTA)
+
+    ax.set_yticks(posiciones)
+    ax.set_yticklabels(datos["politica"], fontsize=9)
+    ax.set_xlabel("Coste en pesos sobre las semanas de prueba")
+    ax.set_xlim(0, datos["coste_total"].max() * 1.16)
+    mejor, peor = datos.iloc[-1], datos.iloc[0]
+    ahorro = 100 * (1 - mejor["coste_total"] / peor["coste_total"])
+    ax.set_title(f"«{mejor['politica']}» cuesta un {ahorro:.0f} % menos que la peor")
+    ax.legend(loc="lower right")
+    _limpiar(ax, rejilla="x")
+    return _guardar(fig, destino, "23_coste_politicas")
+
+
+def atribucion_ahorro(atribucion: pd.DataFrame, destino: Path) -> Path:
+    """Reparto del ahorro entre el efecto de la regla y el del modelo."""
+    _preparar()
+    componentes = atribucion[atribucion["componente"] != "TOTAL"].copy()
+    total = float(atribucion.loc[atribucion["componente"] == "TOTAL", "ahorro"].iloc[0])
+
+    fig, ax = plt.subplots(figsize=(9.2, 3.4))
+    izquierda = 0.0
+    colores = (AZUL, AGUA, GRIS)
+    for (_, fila), color in zip(componentes.iterrows(), colores):
+        ancho = max(fila["ahorro"], 0)
+        ax.barh([0], [ancho], left=izquierda, color=color, height=0.42,
+                edgecolor=SUPERFICIE, linewidth=2)
+        if ancho > total * 0.06:
+            ax.text(izquierda + ancho / 2, 0, f"{100 * fila['ahorro'] / total:.0f} %",
+                    ha="center", va="center", color="white", fontsize=11, fontweight="bold")
+        izquierda += ancho
+
+    ax.set_yticks([])
+    ax.set_xlim(0, max(izquierda, total) * 1.02)
+    ax.set_xlabel("Ahorro en pesos")
+    ax.spines["left"].set_visible(False)
+
+    etiquetas = "    ".join(
+        f"{'■'} {fila['componente']}" for _, fila in componentes.iterrows()
+    )
+    dominante = componentes.loc[componentes["ahorro"].idxmax(), "componente"]
+    peso = 100 * componentes["ahorro"].max() / total
+    ax.set_title(f"El {peso:.0f} % del ahorro viene del «{dominante}»")
+    ax.text(0, -0.42, etiquetas, fontsize=9, color=TINTA_SUAVE)
+    _limpiar(ax, rejilla="x")
+    return _guardar(fig, destino, "24_atribucion")
+
+
+def calibracion(comparacion: pd.DataFrame, destino: Path) -> Path:
+    """Cobertura de cada nivel antes y despues de calibrar."""
+    _preparar()
+    fig, ax = plt.subplots(figsize=(7.6, 5.0))
+    ax.plot([0.45, 1.0], [0.45, 1.0], color=TINTA_SUAVE, linestyle="--", linewidth=1.4,
+            label="cobertura perfecta")
+    ax.scatter(comparacion["nivel"], comparacion["cobertura_antes"], s=70, color=GRIS,
+               zorder=3, label="sin calibrar")
+    ax.scatter(comparacion["nivel"], comparacion["cobertura_despues"], s=70, color=AZUL,
+               zorder=4, label="calibrado")
+    for _, fila in comparacion.iterrows():
+        ax.plot([fila["nivel"], fila["nivel"]],
+                [fila["cobertura_antes"], fila["cobertura_despues"]],
+                color=REJILLA, linewidth=1.4, zorder=2)
+
+    ax.set_xlabel("Nivel de servicio prometido")
+    ax.set_ylabel("Proporción de semanas cubiertas")
+    ax.set_xlim(0.45, 1.02)
+    ax.set_ylim(0.45, 1.02)
+    antes = comparacion["desvio_antes"].abs().mean()
+    despues = comparacion["desvio_despues"].abs().mean()
+    verbo = "mejora" if despues < antes else "no mejora"
+    ax.set_title(f"La calibración {verbo}: desvío medio de {antes:.3f} a {despues:.3f}")
+    ax.legend(loc="upper left")
+    _limpiar(ax, rejilla="both")
+    return _guardar(fig, destino, "21_calibracion")

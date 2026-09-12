@@ -94,6 +94,12 @@ def main() -> int:  # noqa: PLR0915
     dias = ed.patron_dia_semana(ventas)
     inf.tabla(dias[["media", "desv", "indice"]].round(3), indice=True)
     amplitud = dias["indice"].max() / dias["indice"].min()
+    altos = dias["indice"].nlargest(3)
+    bajos = dias["indice"].nsmallest(len(dias) - 3)
+    inf.texto("")
+    inf.texto(f"  amplitud del ciclo: {amplitud:.2f} veces entre el dia mas alto y el mas bajo")
+    inf.texto(f"  los {len(altos)} dias mas altos venden un "
+              f"{100 * (altos.mean() / bajos.mean() - 1):.1f} % mas que el resto")
 
     inf.bloque("2.2 Autocorrelacion diaria, promedio de las 160 series")
     auto_d = ed.autocorrelacion_media(ventas, max_rezago=21)
@@ -181,8 +187,16 @@ def main() -> int:  # noqa: PLR0915
     inf.bloque("4.4 Los patrones del generador (solo diagnostico)")
     pat = tablas.tabla_patrones(semanal, tabs["tendencias"])
     vista_p = pat.copy()
-    vista_p.columns = ["patron", "series", "cambio mediano %", "min %", "max %", "dem.media"]
+    vista_p.columns = ["patron", "series", "cambio medio %", "cambio mediano %",
+                       "desviacion", "min %", "max %", "dem.media"]
     inf.tabla(vista_p.round(1))
+    contraste = tablas.contraste_patrones(semanal, tabs["tendencias"])
+    inf.texto("")
+    inf.texto(f"  contraste de Kruskal-Wallis sobre el cambio acumulado de las "
+              f"{contraste['series']} series:")
+    inf.texto(f"    H = {contraste['kruskal_H']:.3f}   p = {contraste['kruskal_p']:.4f}   "
+              f"razon de correlacion = {contraste['razon_correlacion']:.4f}")
+    inf.texto(f"    un p-valor alto significa que la etiqueta no separa el comportamiento")
 
     inf.bloque("4.5 Balance de las variables categoricas")
     _, cat = profiling.perfilar(completo[["id_tienda", "id_producto", "categoria", "ciudad"]])

@@ -84,7 +84,9 @@ def tabla_patrones(semanal: pd.DataFrame, tendencias: pd.DataFrame) -> pd.DataFr
         marco.groupby("trend_type", observed=True)
         .agg(
             series=("cambio_pct", "size"),
+            cambio_medio=("cambio_pct", "mean"),
             cambio_mediano=("cambio_pct", "median"),
+            cambio_desv=("cambio_pct", "std"),
             cambio_min=("cambio_pct", "min"),
             cambio_max=("cambio_pct", "max"),
             dem_media=("media", "mean"),
@@ -92,3 +94,42 @@ def tabla_patrones(semanal: pd.DataFrame, tendencias: pd.DataFrame) -> pd.DataFr
         .sort_values("series", ascending=False)
         .reset_index()
     )
+
+
+def contraste_patrones(semanal: pd.DataFrame, tendencias: pd.DataFrame) -> dict[str, float]:
+    """Contrasta si las etiquetas de patron separan el comportamiento observado.
+
+    Usa Kruskal-Wallis, que no supone normalidad, sobre el cambio acumulado de
+    cada serie. Y la razon de correlacion, que mide que proporcion de la
+    variacion en ese cambio explica la etiqueta.
+
+    Si la etiqueta no discrimina, deja de ser util como herramienta de
+    diagnostico aunque siga siendo correcto excluirla del modelo.
+    """
+    from scipy import stats
+
+    cambios = []
+    for (tienda, producto), grupo in semanal.sort_values("semana").groupby(CLAVE_SERIE, observed=True):
+        y = grupo["unidades_vendidas"].to_numpy(float)
+        x = np.arange(y.size, dtype=float)
+        pendiente = float(np.polyfit(x, y, 1)[0])
+        cambios.append({
+            "id_tienda": tienda, "id_producto": producto,
+            "cambio_pct": 100 * pendiente * (y.size - 1) / y.mean(),
+        })
+    marco = pd.DataFrame(cambios).merge(tendencias, on=CLAVE_SERIE, how="left")
+
+    grupos = [g["cambio_pct"].to_numpy() for _, g in marco.groupby("trend_type", observed=True)]
+    estadistico, p_valor = stats.kruskal(*grupos)
+
+    global_ = marco["cambio_pct"].mean()
+    sc_total = float(((marco["cambio_pct"] - global_) ** 2).sum())
+    sc_entre = float(sum(len(g) * (g.mean() - global_) ** 2 for g in grupos))
+
+    return {
+        "kruskal_H": float(estadistico),
+        "kruskal_p": float(p_valor),
+        "razon_correlacion": sc_entre / sc_total if sc_total else float("nan"),
+        "grupos": len(grupos),
+        "series": len(marco),
+    }

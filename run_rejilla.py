@@ -28,8 +28,10 @@ from caso_a import panel, paths, plots, rejilla, splits  # noqa: E402
 
 ANCHO = 84
 
-#: Familia elegida en el paso de seleccion.
-FAMILIA = "regresion cuantilica"
+#: Familia elegida en el paso de seleccion. La parametrizacion relativa
+#: aprende la demanda como proporcion de la media reciente y devuelve la
+#: prediccion en unidades.
+FAMILIA = "regresion cuantilica (relativo)"
 
 
 def cargar_hiperparametros() -> dict:
@@ -56,7 +58,7 @@ def main() -> int:
 
     niveles = costes.rejilla_niveles(catalogo)
     parametros = cargar_hiperparametros()
-    clase = modelos.FAMILIAS_TODAS[FAMILIA]
+    clase = modelos.FAMILIAS_AMBAS[FAMILIA]
 
     partes = ["REJILLA DE NIVELES - CASO A", "=" * ANCHO]
     partes += ["", f"  familia: {FAMILIA}",
@@ -71,23 +73,27 @@ def main() -> int:
                "  en toda la rejilla. Con 960 filas, reoptimizar diecisiete veces invitaria a",
                "  ajustarse al ruido de la validacion."]
 
-    ajustados = rejilla.entrenar(clase, entrenamiento, niveles, parametros)
-    abanico = rejilla.predecir(ajustados, prueba)
+    ajustados, correcciones = rejilla.entrenar_calibrado(
+        clase, utilizable, particion, niveles, parametros
+    )
+    abanico_bruto = rejilla.ordenar_niveles(rejilla.predecir(ajustados, prueba))
+    abanico = rejilla.predecir_calibrado(ajustados, correcciones, prueba)
 
     partes += ["", "", "2. ORDEN DE LOS NIVELES", "=" * ANCHO, ""]
-    monotonia = rejilla.verificar_monotonia(abanico)
+    monotonia = rejilla.verificar_monotonia(rejilla.predecir(ajustados, prueba))
     total_cruces = int(monotonia["cruces"].sum())
     partes.append(monotonia.round(3).to_string(index=False))
     partes += ["", f"  cruces totales: {total_cruces} sobre {len(abanico)} filas y "
                    f"{len(monotonia)} pares consecutivos"]
     if total_cruces:
-        abanico = rejilla.ordenar_niveles(abanico)
         restantes = int(rejilla.verificar_monotonia(abanico)["cruces"].sum())
         partes.append(f"  corregidos ordenando los valores de cada fila; cruces restantes: {restantes}")
     else:
         partes.append("  no hace falta correccion")
 
     partes += ["", "", "3. COBERTURA DE CADA NIVEL", "=" * ANCHO, ""]
+    partes += ["  Sobre el abanico ya calibrado. La correccion conformal se aplica dentro",
+               "  del entrenamiento, antes de que ninguna decision use las predicciones.", ""]
     partes += ["  Proporcion de semanas en que la demanda real quedo por debajo del nivel.",
                "  Si el nivel cumple lo que promete, la cobertura se parece al propio nivel.",
                "  Un desvio negativo significa que el modelo se queda corto.", ""]

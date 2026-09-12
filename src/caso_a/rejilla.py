@@ -119,3 +119,50 @@ def cobertura_por_nivel(abanico: pd.DataFrame) -> pd.DataFrame:
             "media_unidades": float(abanico[columna].mean()),
         })
     return pd.DataFrame(filas)
+
+
+def entrenar_calibrado(
+    clase: type[modelos.ModeloCuantil],
+    marco: pd.DataFrame,
+    particion,
+    niveles: list[float],
+    parametros: dict | None = None,
+) -> tuple[dict[float, modelos.ModeloCuantil], dict]:
+    """Entrena la rejilla y calcula su correccion conformal.
+
+    Es el punto unico desde el que el resto del pipeline obtiene el modelo. La
+    calibracion se aplica aqui, antes de que nadie use las predicciones, porque
+    es una correccion al modelo y no un analisis posterior.
+
+    Los ajustes se calculan con predicciones fuera de pliegue, asi que ninguna
+    semana de prueba interviene.
+
+    Returns:
+        Los modelos ajustados y el diccionario de correcciones por nivel.
+    """
+    from caso_a import calibracion
+
+    entrenamiento = splits_separar(marco, particion.entrenamiento)
+    ajustados = entrenar(clase, entrenamiento, niveles, parametros)
+    fuera = calibracion.predicciones_fuera_de_pliegue(
+        clase, marco, particion, niveles, parametros
+    )
+    return ajustados, calibracion.calcular_ajustes(fuera)
+
+
+def predecir_calibrado(
+    ajustados: dict[float, modelos.ModeloCuantil],
+    correcciones: dict,
+    datos: pd.DataFrame,
+) -> pd.DataFrame:
+    """Devuelve el abanico calibrado y ordenado, listo para decidir."""
+    from caso_a import calibracion
+
+    bruto = predecir(ajustados, datos)
+    return ordenar_niveles(calibracion.aplicar(bruto, correcciones))
+
+
+def splits_separar(marco: pd.DataFrame, semanas):
+    """Atajo local para no crear una dependencia circular con splits."""
+    objetivo = (semanas,) if isinstance(semanas, int) else semanas
+    return marco[marco["semana"].isin(objetivo)].copy()

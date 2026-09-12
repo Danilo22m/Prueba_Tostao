@@ -102,25 +102,39 @@ def importancia_permutacion(
 
     Se baraja la columna en los datos de evaluacion y se mide cuanto empeora la
     perdida pinball. Es robusta a la colinealidad, al contrario que los
-    coeficientes o la importancia interna de los arboles, y mide lo que de
-    verdad importa: el efecto sobre la metrica de la decision.
+    coeficientes, y mide lo que de verdad importa: el efecto sobre la metrica de
+    la decision.
+
+    Se incluyen las variables categoricas, que entran al modelo como indicadoras
+    pero se barajan en su forma original.
+
+    En un modelo relativo se excluye la variable de escala. Barajarla no mide su
+    aporte como predictor sino el efecto de descolocar el nivel de todas las
+    series a la vez, que es otra cosa y domina cualquier comparacion.
     """
     generador = np.random.default_rng(semilla)
     real = datos[OBJETIVO].to_numpy(float)
     base = metrics.pinball(real, modelo.predecir(datos), nivel)
 
+    escala = getattr(modelos, "ESCALA", None) if isinstance(modelo, modelos.RelativoDe) else None
+    columnas = [
+        c for c in list(modelo.temporales) + list(modelos.ESTATICAS) + list(modelos.CATEGORICAS)
+        if c != escala
+    ]
+
     filas = []
-    for columna in modelo.temporales + modelos.ESTATICAS:
+    for columna in columnas:
         perdidas = []
         for _ in range(repeticiones):
             alterado = datos.copy()
             alterado[columna] = generador.permutation(alterado[columna].to_numpy())
             perdidas.append(metrics.pinball(real, modelo.predecir(alterado), nivel))
+        media = float(np.mean(perdidas))
         filas.append({
             "variable": columna,
-            "perdida_barajada": float(np.mean(perdidas)),
-            "degradacion": float(np.mean(perdidas)) - base,
-            "degradacion_pct": 100 * (float(np.mean(perdidas)) / base - 1),
+            "perdida_barajada": media,
+            "degradacion": media - base,
+            "degradacion_pct": 100 * (media / base - 1),
             "desviacion": float(np.std(perdidas)),
         })
     return pd.DataFrame(filas).sort_values("degradacion", ascending=False)
@@ -130,16 +144,20 @@ def coeficientes(modelo: modelos.ModeloCuantil) -> pd.DataFrame:
     """Coeficientes del modelo lineal, sobre variables estandarizadas.
 
     Al estar estandarizadas, la magnitud del coeficiente es comparable entre
-    variables: indica cuantas unidades cambia la prediccion por cada desviacion
-    tipica de esa variable.
+    variables. En la parametrizacion absoluta indica cuantas unidades cambia la
+    prediccion por cada desviacion tipica de la variable; en la relativa, en que
+    proporcion cambia respecto a la media reciente de la serie.
     """
-    interno = getattr(modelo, "_modelo", None)
+    # Las parametrizaciones relativas envuelven al modelo real, asi que hay que
+    # desenvolverlas para llegar a los coeficientes.
+    efectivo = getattr(modelo, "_interno", None) or modelo
+    interno = getattr(efectivo, "_modelo", None)
     if interno is None or not hasattr(interno, "coef_"):
         raise TypeError("El modelo no expone coeficientes lineales.")
 
-    nombres = list(modelo.temporales) + list(modelos.ESTATICAS)
-    if modelo._codificador is not None:
-        nombres += list(modelo._codificador.get_feature_names_out(modelos.CATEGORICAS))
+    nombres = list(efectivo.temporales) + list(modelos.ESTATICAS)
+    if efectivo._codificador is not None:
+        nombres += list(efectivo._codificador.get_feature_names_out(modelos.CATEGORICAS))
 
     return (
         pd.DataFrame({"variable": nombres, "coeficiente": interno.coef_})

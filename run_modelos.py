@@ -1,8 +1,11 @@
 """Seleccion de familia de algoritmo del Caso A.
 
-Compara siete familias. Las que solo estiman la media se convierten a
-distribucion con los cuantiles empiricos de sus residuales, para que compitan
-en la misma metrica que las cuantilicas.
+Compara cada familia en dos parametrizaciones, absoluta y relativa. La
+relativa aprende la demanda como proporcion de la media reciente y devuelve la
+prediccion en unidades, de modo que las metricas siguen siendo comparables.
+
+Las familias que solo estiman la media se convierten a distribucion con los
+cuantiles empiricos de sus residuales, para que compitan en la misma metrica.
 
 La familia se elige por la perdida pinball en el nivel que se va a operar, no
 por el error del pronostico central.
@@ -41,7 +44,9 @@ NIVEL_DECISION = 0.65
 
 #: Familias que solo estiman la media condicional. Se marcan en el informe
 #: porque su colchon es constante por construccion.
-PUNTUALES = set(modelos.FAMILIAS_PUNTUALES)
+PUNTUALES = set(modelos.FAMILIAS_PUNTUALES) | {
+    f"{n} (relativo)" for n in modelos.FAMILIAS_PUNTUALES
+}
 
 
 def main() -> int:  # noqa: PLR0915
@@ -56,7 +61,7 @@ def main() -> int:  # noqa: PLR0915
     entrenamiento = splits.separar(utilizable, particion.entrenamiento)
     prueba = splits.separar(utilizable, particion.prueba)
     real = prueba[modelos.OBJETIVO].to_numpy(float)
-    familias = modelos.FAMILIAS_TODAS
+    familias = modelos.FAMILIAS_AMBAS
 
     partes = ["SELECCION DE FAMILIA - CASO A", "=" * ANCHO]
     partes += ["", f"  {particion}",
@@ -66,7 +71,11 @@ def main() -> int:  # noqa: PLR0915
                "",
                "  Las familias marcadas [puntual] solo estiman la media condicional. Se",
                "  convierten en distribucion con los cuantiles empiricos de sus residuales,",
-               "  igual que la linea base, para que compitan en la misma metrica."]
+               "  igual que la linea base, para que compitan en la misma metrica.",
+               "",
+               "  Las marcadas (relativo) aprenden la demanda como proporcion de la media",
+               "  de las cuatro semanas previas y devuelven la prediccion en unidades. Todas",
+               "  las metricas se calculan en unidades, no en proporciones."]
 
     partes += ["", "", "1. AJUSTE DE HIPERPARAMETROS", "=" * ANCHO, ""]
     partes += [f"  Busqueda bayesiana, {ajuste.ENSAYOS} ensayos por familia, optimizando la",

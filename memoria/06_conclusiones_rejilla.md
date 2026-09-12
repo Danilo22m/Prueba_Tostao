@@ -4,99 +4,92 @@
 
 Lectura de `salidas/informes/06_rejilla_niveles.txt` y de las figuras 16 y 17.
 
-Se entrenan 17 regresiones cuantílicas, una por cada nivel de servicio que
-pidieron los costes, reutilizando el alfa optimizado en el nivel de operación.
+Se entrenan 17 regresiones cuantílicas en parametrización relativa, una por cada
+nivel de servicio que pidieron los costes, reutilizando el alfa optimizado en el
+nivel de operación.
+
+Las cifras comparativas de la parametrización absoluta se reproducen cambiando
+la constante `FAMILIA` del script correspondiente. Ver `T1_parametrizacion_relativa.md`.
 
 ---
 
-## 1. La calibración es buena, y no era evidente que fuera a serlo
+## 1. La calibración es buena en todo el rango
 
 Cobertura empírica frente al nivel prometido, sobre las 480 decisiones de prueba:
 
-| Nivel | Cobertura | Desvío |
-|---|---|---|
-| 0,50 | 0,517 | +0,017 |
-| 0,57 | 0,581 | +0,011 |
-| 0,65 | 0,679 | +0,029 |
-| 0,68 | 0,700 | +0,020 |
-| 0,74 | 0,735 | −0,005 |
-| 0,81 | 0,777 | −0,033 |
-| 0,90 | 0,875 | −0,025 |
-| 0,98 | 0,960 | −0,020 |
-| 0,99 | 0,988 | −0,002 |
+| Nivel | Cobertura | Desvío | Unidades medias |
+|---|---|---|---|
+| 0,50 | 0,510 | +0,010 | 93,2 |
+| 0,59 | 0,633 | +0,043 | 96,8 |
+| 0,65 | 0,675 | +0,025 | 98,6 |
+| 0,68 | 0,692 | +0,012 | 99,5 |
+| 0,74 | 0,735 | −0,005 | 101,7 |
+| 0,81 | 0,785 | −0,025 | 104,6 |
+| 0,90 | 0,888 | −0,013 | 110,6 |
+| 0,98 | 0,992 | +0,012 | 124,9 |
+| 0,99 | 0,996 | +0,006 | 128,7 |
 
-El desvío medio es de −0,000 y el peor caso es de 0,038. En la figura 17 los
-puntos abrazan la diagonal.
+El desvío medio es de +0,006 y el peor caso de 0,043. En la figura 17 los puntos
+abrazan la diagonal, y seis de los diecisiete se quedan cortos frente a ocho en
+la versión absoluta.
 
 **Qué significa.** Cuando la política prometa cubrir el 68 % de las semanas, se
-cubre el 70 %. El nivel de servicio que se le ofrece a negocio es real y no una
+cubre el 69 %. El nivel de servicio que se le ofrece a negocio es real y no una
 etiqueta.
 
-Se aprecia un patrón leve pero consistente: los niveles bajos cubren algo de más
-y los altos algo de menos. Es lo habitual cuando se estima con muestra corta, y
-la magnitud es pequeña. El paso de calibración conformal puede corregirlo, pero
-partiendo de aquí el margen de mejora es estrecho.
+## 2. El nivel 0,99 ya es utilizable
 
-## 2. Los niveles se cruzan en el 23 % de las filas, y hay que corregirlo
+Era el hallazgo pendiente cuando el modelo trabajaba en unidades absolutas: el
+nivel extremo pedía más del doble de la demanda media y era el peor estimado de
+toda la rejilla.
 
-Se detectaron 111 cruces sobre 480 filas y 16 pares consecutivos de niveles. Cada
+| | Parametrización absoluta | Relativa |
+|---|---|---|
+| Unidades medias en el nivel 0,99 | 208,5 | **128,7** |
+| Veces la demanda media | 2,24 | **1,38** |
+| Cobertura | 0,988 | 0,996 |
+
+**Por qué se arregló.** Estimar el percentil 99 de una proporción es mucho más
+fácil que estimarlo en unidades, porque todas las series contribuyen a la misma
+distribución en vez de una por serie. La cola deja de apoyarse en las seis o
+siete observaciones más altas del panel.
+
+**Consecuencia.** Se retira el argumento que se había construido contra el
+escenario de coste sin merma por inestabilidad del nivel extremo. Ese escenario
+sigue siendo poco realista para una cafetería, pero ya no se le puede reprochar
+que obligue a operar donde el modelo peor estima.
+
+## 3. Los cruces son muchos pero inofensivos
+
+Se detectaron 413 cruces sobre 480 filas y 16 pares consecutivos de niveles. Cada
 nivel se ajusta por separado, así que nada garantiza que salgan ordenados.
-
-La mayoría son irrelevantes por magnitud:
 
 | Par | Cruces | Cruce máximo |
 |---|---|---|
-| 0,65 → 0,66 | 37 | 0,25 unidades |
-| 0,66 → 0,67 | 26 | 0,25 unidades |
-| 0,64 → 0,65 | 12 | 0,15 unidades |
-| 0,90 → 0,98 | 6 | 2,64 unidades |
-| **0,98 → 0,99** | **11** | **44,08 unidades** |
+| 0,79 → 0,80 | 84 | 0,93 unidades |
+| 0,64 → 0,65 | 83 | 0,65 unidades |
+| 0,66 → 0,67 | 82 | 0,74 unidades |
+| 0,65 → 0,66 | 58 | 0,08 unidades |
+| 0,98 → 0,99 | 6 | 0,27 unidades |
 
-Entre niveles casi idénticos, como 0,65 y 0,66, el cruce es de décimas de unidad
-y es simple ruido numérico: los dos modelos estiman prácticamente lo mismo.
+**La magnitud es lo que importa, no el recuento.** El cruce máximo de toda la
+rejilla es de 0,93 unidades, frente a 44,08 en la versión absoluta. Ocurren entre
+niveles casi idénticos, como 0,64 y 0,65, donde los dos modelos estiman
+prácticamente lo mismo y la diferencia es ruido numérico sin consecuencia
+operativa.
 
-**El cruce de 44 unidades entre 0,98 y 0,99 es otra cosa** y se trata en el
-apartado siguiente.
-
-La corrección aplicada es ordenar los valores de cada fila. No cambia el conjunto
-de cantidades estimadas, solo su asignación a niveles, y garantiza que pedir con
-más protección nunca devuelva menos unidades. Tras ordenar no queda ningún cruce.
-
-## 3. El nivel 0,99 no es fiable, y eso confirma una advertencia previa
-
-| Nivel | Unidades medias | Veces la demanda media |
-|---|---|---|
-| 0,90 | 109,4 | 1,17 |
-| 0,98 | 125,4 | 1,34 |
-| 0,99 | 208,5 | **2,24** |
-
-El salto entre 0,98 y 0,99 es de 83 unidades, mientras que entre 0,90 y 0,98 es
-de 16. La progresión se rompe.
-
-Su pérdida pinball también lo delata: 1,299 en el nivel 0,99 frente a 0,979 en el
-0,98. Una pérdida mayor en un nivel más extremo es anómala.
-
-**La causa es la muestra.** Estimar el percentil 99 con 960 filas significa
-apoyarse en las seis o siete observaciones más altas. Cualquier modelo se vuelve
-inestable ahí.
-
-**La consecuencia práctica es importante y hay que llevarla a la presentación.**
-El nivel 0,99 es el que opera el escenario sin merma, el del enunciado. Aplicarlo
-literalmente significaría pedir 2,24 veces la demanda media, con la estimación
-menos fiable de toda la rejilla.
-
-Es un argumento adicional, ahora medido, contra ese escenario de coste. No solo
-deja los ocho productos indistinguibles: además obliga a operar en la zona donde
-el modelo peor estima.
-
-Los niveles del escenario con merma, entre 0,57 y 0,68, caen cerca de la mediana,
-que es donde la estimación es más estable y la calibración sale mejor.
+La corrección es ordenar los valores de cada fila. No cambia el conjunto de
+cantidades estimadas, solo su asignación a niveles, y garantiza que pedir con más
+protección nunca devuelva menos unidades. Tras ordenar no queda ningún cruce.
 
 ## 4. El abanico se adapta a cada serie
 
 La figura 16 muestra cuatro series de volatilidad distinta con su abanico. El
-ancho medio va de una serie a otra en un rango amplio, que es exactamente la
-propiedad por la que se eligió esta familia frente a Ridge y la media móvil.
+ancho medio entre el nivel alto y el central va de 5,4 a 37,9 unidades según la
+serie, casi el doble de amplitud que en la versión absoluta.
+
+Es la propiedad por la que se eligió esta familia frente a las puntuales: una
+serie tranquila no recibe el mismo margen que una volátil.
 
 ## 5. Sobre reutilizar el alfa en toda la rejilla
 
@@ -109,10 +102,8 @@ el resultado.
 
 Y la calibración obtenida es buena en todo el rango, incluidos los extremos, así
 que no hay evidencia de que el alfa elegido se quede corto donde más difícil es
-estimar.
-
-La excepción es el nivel 0,99, pero ahí el problema no es el alfa sino que no hay
-datos suficientes en la cola. Reoptimizar no lo arreglaría.
+estimar. A diferencia de la versión absoluta, el nivel 0,99 ya no es una
+excepción.
 
 ---
 
@@ -121,7 +112,7 @@ datos suficientes en la cola. Reoptimizar no lo arreglaría.
 | # | Decisión | Afecta a |
 |---|---|---|
 | 1 | Ordenar los valores de cada fila para forzar niveles monótonos | Optimizador |
-| 2 | Declarar que el nivel 0,99 pide 2,24 veces la demanda media | Presentación |
-| 3 | Usar el nivel 0,99 como argumento medido contra el escenario sin merma | Presentación |
-| 4 | Reutilizar el alfa en toda la rejilla, con la calibración como justificación | Memoria técnica |
+| 2 | El nivel 0,99 pasa a ser utilizable, con 1,38 veces la demanda media | Presentación |
+| 3 | Reutilizar el alfa en toda la rejilla, con la calibración como justificación | Memoria técnica |
+| 4 | Declarar que los cruces son de menos de una unidad | Memoria técnica |
 | 5 | El abanico de prueba queda guardado como artefacto auditable | Optimizador |

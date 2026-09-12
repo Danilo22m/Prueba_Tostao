@@ -24,7 +24,7 @@ from caso_a import costes, diagnostico, features, loaders, modelos  # noqa: E402
 from caso_a import panel, paths, plots, rejilla, splits  # noqa: E402
 
 ANCHO = 84
-FAMILIA = "regresion cuantilica"
+FAMILIA = "regresion cuantilica (relativo)"
 NIVEL_CENTRAL = "q0.50"
 NIVEL_OPERACION = 0.65
 
@@ -44,11 +44,13 @@ def main() -> int:  # noqa: PLR0915
 
     ruta_hiper = paths.PARAMETROS / "hiperparametros.json"
     parametros = json.loads(ruta_hiper.read_text(encoding="utf-8"))["por_familia"].get(FAMILIA, {})
-    clase = modelos.FAMILIAS_TODAS[FAMILIA]
+    clase = modelos.FAMILIAS_AMBAS[FAMILIA]
 
     niveles = costes.rejilla_niveles(catalogo)
-    ajustados = rejilla.entrenar(clase, entrenamiento, niveles, parametros)
-    abanico = rejilla.ordenar_niveles(rejilla.predecir(ajustados, prueba))
+    ajustados, correcciones = rejilla.entrenar_calibrado(
+        clase, utilizable, particion, niveles, parametros
+    )
+    abanico = rejilla.predecir_calibrado(ajustados, correcciones, prueba)
 
     # Pegar los atributos que hacen falta para desglosar.
     contexto = prueba[["id_tienda", "id_producto", "semana", "nombre", "ciudad", "tamano_m2"]]

@@ -1,0 +1,81 @@
+CALIBRACION CONFORMAL - CASO A
+====================================================================================
+
+  familia: regresion cuantilica (relativo)
+  niveles calibrados: 17
+
+  El ajuste se calcula con predicciones fuera de pliegue: cada semana de
+  validacion la predice un modelo que no la vio. Asi no se reserva ningun
+  trozo del entrenamiento y la correccion sigue siendo honesta.
+
+
+1. DESVIO MEDIDO EN VALIDACION
+====================================================================================
+
+ nivel  cobertura_fuera_pliegue  desvio  desplazamiento
+  0.50                   0.5125  0.0125         -0.2732
+  0.57                   0.5896  0.0196         -0.3844
+  0.59                   0.6042  0.0142         -0.5885
+  0.64                   0.6646  0.0246         -0.5607
+  0.65                   0.6646  0.0146         -0.4421
+  0.66                   0.6750  0.0150         -0.8337
+  0.67                   0.6854  0.0154         -0.6909
+  0.68                   0.6938  0.0137         -0.3303
+  0.72                   0.7292  0.0092         -0.3988
+  0.74                   0.7542  0.0142         -0.6568
+  0.78                   0.7938  0.0137         -0.4162
+  0.79                   0.7979  0.0079         -0.3264
+  0.80                   0.8021  0.0021         -0.1539
+  0.81                   0.8167  0.0067         -0.0894
+  0.90                   0.9250  0.0250         -1.4735
+  0.98                   0.9833  0.0033         -0.4406
+  0.99                   0.9896 -0.0004         -1.9637
+
+  filas de calibracion: 480
+  desvio medio antes de corregir: +0.0124
+  desplazamiento medio aplicado:  -0.59 unidades
+
+
+2. EFECTO SOBRE LA COBERTURA EN PRUEBA
+====================================================================================
+
+ nivel  cobertura_antes  cobertura_despues  desvio_antes  desvio_despues  unidades_antes  unidades_despues  mejora
+  0.50           0.5104             0.5021        0.0104          0.0021         93.1607           92.8875  0.0083
+  0.57           0.6042             0.5938        0.0342          0.0238         95.9470           95.5575  0.0104
+  0.59           0.6333             0.6104        0.0433          0.0204         96.7680           96.1845  0.0229
+  0.64           0.6688             0.6583        0.0287          0.0183         98.3892           97.7997  0.0104
+  0.65           0.6750             0.6604        0.0250          0.0104         98.5672           97.9681  0.0146
+  0.66           0.6812             0.6646        0.0212          0.0046         98.8912           98.2323  0.0167
+  0.67           0.6833             0.6688        0.0133         -0.0013         99.2048           98.5248  0.0121
+  0.68           0.6917             0.6854        0.0117          0.0054         99.5460           99.2157  0.0062
+  0.72           0.7229             0.7125        0.0029         -0.0075        101.1626          100.7376 -0.0046
+  0.74           0.7354             0.7188       -0.0046         -0.0212        101.6652          101.0346 -0.0167
+  0.78           0.7583             0.7479       -0.0217         -0.0321        102.7400          102.3239 -0.0104
+  0.79           0.7688             0.7604       -0.0212         -0.0296        103.4115          103.0851 -0.0083
+  0.80           0.7729             0.7646       -0.0271         -0.0354        103.7280          103.5741 -0.0083
+  0.81           0.7854             0.7854       -0.0246         -0.0246        104.5923          104.5029  0.0000
+  0.90           0.8875             0.8625       -0.0125         -0.0375        110.5975          109.1241 -0.0250
+  0.98           0.9917             0.9917        0.0117          0.0117        124.9035          124.3569  0.0000
+  0.99           0.9958             0.9938        0.0058          0.0038        128.7099          126.8523  0.0021
+
+  desvio medio absoluto antes:   0.0188
+  desvio medio absoluto despues: 0.0170
+  niveles que mejoran: 9 de 17
+
+
+3. EFECTO SOBRE EL COSTE DE LA POLITICA
+====================================================================================
+
+    escenario  coste_sin_calibrar  coste_calibrado  diferencia  servicio_sin  servicio_cal
+    sin merma          457557.879       448860.951    8696.928         1.000         0.999
+merma parcial         6033496.926      6052089.176  -18592.250         0.977         0.976
+    con merma         9083554.062      9061785.361   21768.701         0.963         0.961
+
+  Una diferencia positiva significa que calibrar abarata la politica.
+
+
+4. FICHEROS GENERADOS
+====================================================================================
+
+  salidas/parametros/ajustes_conformales.csv
+  salidas/figuras/21_calibracion.png

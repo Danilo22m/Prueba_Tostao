@@ -1,0 +1,84 @@
+PEDIDOS RECOMENDADOS - CASO A
+====================================================================================
+
+  escenario de coste: con merma (se descarta el 100% del sobrante)
+  familia: regresion cuantilica (relativo)
+  semanas simuladas: [11, 12, 13]
+  redondeo: al entero cercano, multiplo de lote 1
+
+
+1. VERIFICACIONES DE LA TABLA
+====================================================================================
+
+  OK  ningun pedido negativo
+  OK  todas las cantidades son enteras
+  OK  el pedido mas el stock alcanza siempre el objetivo
+  OK  donde el stock cubre el objetivo, el pedido es cero
+  OK  cada producto usa el nivel de servicio que marcan sus costes
+  OK  ningun objetivo queda por debajo del pronostico central
+
+
+2. NIVEL DE SERVICIO Y COLCHON POR PRODUCTO
+====================================================================================
+
+id_producto          nombre  nivel  pronostico  objetivo  colchon  pedido  colchon_pct
+   PROD_001           Tinto   0.68       58.40     63.28     4.88   43.08         8.36
+   PROD_005         Buñuelo   0.67      125.44    132.65     7.21  113.00         5.74
+   PROD_003      Cappuccino   0.66       82.82     88.72     5.90   66.97         7.12
+   PROD_002  Café con Leche   0.65       79.95     84.95     5.00   67.45         6.25
+   PROD_006       Croissant   0.65      114.93    121.48     6.55   98.83         5.70
+   PROD_004     Pan de Bono   0.64       49.14     52.07     2.93   29.58         5.96
+   PROD_008 Jugo de Naranja   0.59      112.59    116.00     3.41   92.90         3.03
+   PROD_007 Pastel de Pollo   0.57      119.82    122.97     3.14  105.32         2.62
+
+  El colchon es la diferencia entre lo que se pide tener y lo que se espera
+  vender. Crece con el nivel de servicio, que a su vez crece con el margen.
+
+
+3. RESUMEN DE LA OPERACION
+====================================================================================
+
+  series con pedido               160
+  unidades totales a pedir        12,362
+  series cubiertas por el stock   5
+  pedido medio por serie          77.3
+  pedido maximo                   219
+  stock medio en estanteria       21.0
+
+
+4. MUESTRA DE LA TABLA
+====================================================================================
+
+  tienda        producto pronostico nivel objetivo  stock pedido
+STORE_01           Tinto       45.0  0.68       49      1     48
+STORE_01  Café con Leche       59.4  0.65       63     10     53
+STORE_01      Cappuccino       61.3  0.66       66     33     33
+STORE_01     Pan de Bono       49.1  0.64       52     11     41
+STORE_01         Buñuelo       77.3  0.67       82      3     79
+STORE_01       Croissant       88.4  0.65       94     13     81
+STORE_01 Pastel de Pollo       70.6  0.57       73      8     65
+STORE_01 Jugo de Naranja       66.6  0.59       69     13     56
+STORE_08           Tinto       82.8  0.68       89     45     44
+STORE_08  Café con Leche      103.1  0.65      109      1    108
+STORE_08      Cappuccino      121.1  0.66      129      0    129
+STORE_08     Pan de Bono       66.4  0.64       70     62      8
+STORE_08         Buñuelo      179.5  0.67      189     52    137
+STORE_08       Croissant      161.4  0.65      170     51    119
+STORE_08 Pastel de Pollo      228.0  0.57      233     56    177
+STORE_08 Jugo de Naranja      154.7  0.59      159     13    146
+
+
+5. SENSIBILIDAD AL ESCENARIO DE COSTE
+====================================================================================
+
+    escenario merma_supuesta  nivel_medio  objetivo_medio  unidades_a_pedir
+    sin merma             0%        0.989         126.481             16911
+merma parcial            50%        0.779         102.419             13078
+    con merma           100%        0.639          97.875             12362
+
+
+6. FICHEROS GENERADOS
+====================================================================================
+
+  salidas/parametros/pedidos.csv
+  salidas/figuras/22_composicion_pedido.png

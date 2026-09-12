@@ -441,3 +441,95 @@ FAMILIAS_PUNTUALES = {
 
 #: Todas las familias que entran en la comparacion.
 FAMILIAS_TODAS = {**FAMILIAS, **FAMILIAS_PUNTUALES}
+
+
+# --------------------------------------------------------------------------
+# Parametrizacion relativa
+# --------------------------------------------------------------------------
+
+#: Variable que sirve de escala. Es la media movil mas larga disponible, que
+#: nunca vale cero porque la demanda semanal minima observada es de 14 unidades.
+ESCALA = "media_4"
+
+
+class RelativoDe(ModeloCuantil):
+    """Envuelve una familia para que aprenda en proporcion y no en unidades.
+
+    El diagnostico mostro dos problemas encadenados en la parametrizacion
+    absoluta: el modelo encoge las predicciones hacia una media general que no
+    significa nada cuando unas series venden 40 unidades y otras 154, y el error
+    absoluto crece con el nivel de la serie.
+
+    Los dos desaparecen si el objetivo se expresa como proporcion de la media
+    reciente. Una serie que vende 44 sobre una media de 40 y otra que vende 165
+    sobre una media de 150 pasan a ser el mismo caso: ambas un 10 % por encima.
+
+    El ajuste ocurre en proporcion y la prediccion se devuelve en unidades, de
+    modo que la evaluacion sigue siendo en unidades y comparable con la version
+    absoluta. La conversion es exacta: multiplicar un cuantil por una cantidad
+    positiva conocida da el cuantil del producto, y la escala es un dato
+    disponible en el momento de predecir.
+    """
+
+    #: Columnas que se dividen por la escala. Las que ya son proporciones,
+    #: como razon_ultima y cv_reciente, se dejan intactas.
+    PREFIJOS_A_ESCALAR = ("rezago_", "media_", "desv_", "pendiente")
+
+    def __init__(self, nivel: float, **parametros) -> None:
+        super().__init__(nivel)
+        self.parametros = parametros
+        self._interno: ModeloCuantil | None = None
+
+    @property
+    def base(self) -> type[ModeloCuantil]:
+        """Familia que se envuelve. La definen las subclases generadas."""
+        raise NotImplementedError
+
+    def _relativizar(self, marco: pd.DataFrame) -> pd.DataFrame:
+        """Divide objetivo y variables de nivel por la escala de cada fila."""
+        escala = marco[ESCALA].to_numpy(float)
+        if (escala <= 0).any():
+            raise ValueError(f"La escala {ESCALA!r} tiene valores no positivos.")
+
+        salida = marco.copy()
+        for columna in marco.columns:
+            if columna.startswith(self.PREFIJOS_A_ESCALAR):
+                salida[columna] = marco[columna].to_numpy(float) / escala
+        if OBJETIVO in marco.columns:
+            salida[OBJETIVO] = marco[OBJETIVO].to_numpy(float) / escala
+        return salida
+
+    def _ajustar(self, entrenamiento: pd.DataFrame) -> "RelativoDe":
+        self._interno = self.base(self.nivel, **self.parametros).ajustar(
+            self._relativizar(entrenamiento)
+        )
+        self.temporales = self._interno.temporales
+        return self
+
+    def predecir(self, datos: pd.DataFrame) -> np.ndarray:
+        proporcion = self._interno.predecir(self._relativizar(datos))
+        return proporcion * datos[ESCALA].to_numpy(float)
+
+
+def relativa(clase: type[ModeloCuantil]) -> type[RelativoDe]:
+    """Crea la version relativa de una familia."""
+    return type(
+        f"Relativo{clase.__name__}",
+        (RelativoDe,),
+        {
+            "nombre": f"{clase.nombre} (relativo)",
+            "base": property(lambda self, c=clase: c),
+            "__doc__": f"Version relativa de {clase.nombre}. Ver RelativoDe.",
+        },
+    )
+
+
+#: Version relativa de cada familia global.
+FAMILIAS_RELATIVAS = {
+    f"{nombre} (relativo)": relativa(clase)
+    for nombre, clase in FAMILIAS_TODAS.items()
+    if nombre != "media movil + residuales"
+}
+
+#: Todas las parametrizaciones, absolutas y relativas.
+FAMILIAS_AMBAS = {**FAMILIAS_TODAS, **FAMILIAS_RELATIVAS}

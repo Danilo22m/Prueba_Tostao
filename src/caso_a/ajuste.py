@@ -85,10 +85,13 @@ def optimizar(
         espacio de busqueda definido, devuelve parametros vacios y su perdida
         con los valores por defecto.
     """
-    if nombre not in ESPACIOS:
+    # Las versiones relativas comparten el espacio de busqueda de la familia
+    # que envuelven: cambia la parametrizacion del objetivo, no el algoritmo.
+    clave = nombre.replace(" (relativo)", "")
+    if clave not in ESPACIOS:
         return {}, _perdida_en_pliegues(clase, marco, particion, nivel)
 
-    espacio = ESPACIOS[nombre]
+    espacio = ESPACIOS[clave]
 
     def objetivo(ensayo: optuna.Trial) -> float:
         parametros = espacio(ensayo)

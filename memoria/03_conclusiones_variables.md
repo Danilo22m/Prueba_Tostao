@@ -139,6 +139,16 @@ Una mejora del 5 al 10 % relativo sería un buen resultado y hay que presentarlo
 como tal. Una mejora muy superior debe hacer sospechar de fuga de información
 antes que celebrarse.
 
+**Nota añadida tras completar el modelado.** La expectativa de arriba resultó
+optimista. El mejor modelo obtuvo un 11,76 % de error ponderado frente al 11,91 %
+de la línea base: una mejora del 1,3 % relativo, muy por debajo del 5 % que se
+anticipaba aquí.
+
+Se deja escrita la previsión original en lugar de reescribirla, porque la
+distancia entre lo esperado y lo obtenido es en sí misma un resultado: confirma
+que el techo lo pone la información disponible y no el algoritmo, tal como
+apuntaba la descomposición de la varianza.
+
 Y conviene repetir el argumento central: el valor del proyecto no depende de
 ganar esa carrera. Depende de la política de pedido, que convierte cualquier
 pronóstico razonable en la cantidad correcta según los costes.
