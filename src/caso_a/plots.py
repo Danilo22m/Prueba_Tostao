@@ -738,23 +738,26 @@ def coste_politicas(tabla: pd.DataFrame, destino: Path) -> Path:
     fig, ax = plt.subplots(figsize=(9.2, 4.6))
     posiciones = np.arange(len(datos))
 
-    ax.barh(posiciones, datos["ventas_perdidas"], color=ROJO, height=0.62,
+    # Dos colores bien separados: el naranja para la venta que se pierde y el
+    # azul para el producto que sobra. Todo en millones para no leer 1e7.
+    ax.barh(posiciones, datos["ventas_perdidas"] / 1e6, color=NARANJA, height=0.62,
             label="ventas perdidas")
-    ax.barh(posiciones, datos["merma"], left=datos["ventas_perdidas"], color=NARANJA,
+    ax.barh(posiciones, datos["merma"] / 1e6, left=datos["ventas_perdidas"] / 1e6, color=AZUL,
             height=0.62, label="merma", edgecolor=SUPERFICIE, linewidth=2)
 
     for indice, fila in enumerate(datos.itertuples()):
-        ax.text(fila.coste_total * 1.01, indice, f"{fila.coste_total / 1e6:.2f} M",
+        ax.text(fila.coste_total / 1e6 * 1.01, indice, f"{fila.coste_total / 1e6:.2f} M",
                 va="center", fontsize=9, color=TINTA)
 
     ax.set_yticks(posiciones)
     ax.set_yticklabels(datos["politica"], fontsize=9)
-    ax.set_xlabel("Coste en pesos sobre las semanas de prueba")
-    ax.set_xlim(0, datos["coste_total"].max() * 1.16)
+    ax.set_xlabel("Coste en millones de pesos sobre las semanas de prueba")
+    ax.set_xlim(0, datos["coste_total"].max() / 1e6 * 1.16)
     mejor, peor = datos.iloc[-1], datos.iloc[0]
     ahorro = 100 * (1 - mejor["coste_total"] / peor["coste_total"])
-    ax.set_title(f"«{mejor['politica']}» cuesta un {ahorro:.0f} % menos que la peor")
-    ax.legend(loc="lower right")
+    ax.set_title(f"«{mejor['politica']}» cuesta un {ahorro:.0f} % menos que la peor", pad=26)
+    ax.legend(loc="lower left", bbox_to_anchor=(0, 1.0), ncol=2, frameon=False,
+              handlelength=1.4, columnspacing=1.6)
     _limpiar(ax, rejilla="x")
     return _guardar(fig, destino, "23_coste_politicas")
 
